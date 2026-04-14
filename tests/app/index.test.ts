@@ -43,10 +43,10 @@ async function main(): Promise<void> {
         return {
           questions: [
             {
-              question: 'What is Physics?',
-              options: ['A', 'B', 'C', 'D'] as const,
-              correctAnswer: 0,
-              explanation: 'Example explanation.',
+              question_text: 'What is the SI unit of force?',
+              options: ['Newton', 'Joule', 'Watt', 'Pascal'] as const,
+              correct_answer: 0,
+              explanation_text: 'A newton is the SI unit used to measure force in physics.',
             },
           ],
         };
@@ -65,10 +65,10 @@ async function main(): Promise<void> {
       value: {
         questions: [
           {
-            question: 'What is Physics?',
-            options: ['A', 'B', 'C', 'D'],
+            question: 'What is the SI unit of force?',
+            options: ['Newton', 'Joule', 'Watt', 'Pascal'],
             correctAnswer: 0,
-            explanation: 'Example explanation.',
+            explanation: 'A newton is the SI unit used to measure force in physics.',
           },
         ],
       },

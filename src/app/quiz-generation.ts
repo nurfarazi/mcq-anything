@@ -14,6 +14,15 @@ import type {
   QuizGenerationSuccess,
 } from './quiz-types';
 
+type NormalizedQuizInput = {
+  ok: true;
+  value: QuizGenerationInput;
+};
+
+type ConfiguredProviderResult =
+  | { ok: true; provider: McqProvider }
+  | { ok: false; error: AppError };
+
 const DEFAULT_LM_STUDIO_ENDPOINT = 'http://127.0.0.1:1234/v1/mcq';
 
 function success(value: QuizGenerationSuccess): QuizGenerationResult {
@@ -45,14 +54,29 @@ function setupFailure(): QuizGenerationResult {
   return failure('GENERATION_FAILED', 'Unable to configure quiz generation.');
 }
 
-function createConfiguredProvider(): McqProvider | QuizGenerationResult {
+function isNormalizedQuizInput(
+  value: QuizGenerationResult | NormalizedQuizInput,
+): value is NormalizedQuizInput {
+  return value.ok && 'topic' in value.value;
+}
+
+function createConfiguredProvider(): ConfiguredProviderResult {
   try {
     const providerConfig = parseProviderConfig();
     const providerKey = resolveActiveProviderKey(providerConfig);
 
-    return createProvider(providerKey, buildProviderFactoryOptions());
+    return {
+      ok: true,
+      provider: createProvider(providerKey, buildProviderFactoryOptions()),
+    };
   } catch {
-    return setupFailure();
+    return {
+      ok: false,
+      error: {
+        code: 'GENERATION_FAILED',
+        message: 'Unable to configure quiz generation.',
+      },
+    };
   }
 }
 
@@ -64,15 +88,20 @@ export async function generateQuiz(
 ): Promise<QuizGenerationResult> {
   const normalizedInput = normalizeQuizGenerationInput(input);
 
-  if (!normalizedInput.ok) {
+  if (!isNormalizedQuizInput(normalizedInput)) {
     return normalizedInput;
   }
 
-  const provider = createConfiguredProvider();
+  const providerResult = createConfiguredProvider();
 
-  if ('ok' in provider && provider.ok === false) {
-    return provider;
+  if (providerResult.ok === false) {
+    return {
+      ok: false,
+      error: providerResult.error,
+    };
   }
+
+  const provider = providerResult.provider;
 
   let generated;
 
@@ -84,6 +113,7 @@ export async function generateQuiz(
 
   const validated = validateQuizGenerationResponse(
     generated,
+    normalizedInput.value.topic,
     normalizedInput.value.questionCount,
   );
 

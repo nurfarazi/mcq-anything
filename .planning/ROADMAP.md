@@ -10,6 +10,7 @@
 | 1 | Foundation and provider abstraction | PROV-01, PROV-02, PROV-03 | Provider interface, configuration path, and default LM Studio wiring exist without business-logic branching |
 | 2 | Topic and count input flow | GEN-01, GEN-02 | User can choose a topic and number of questions and submit a generation request |
 | 3 | MCQ generation and output validation | GEN-03, QUAL-01, QUAL-02 | Generated MCQs render with answers/explanations and invalid output is filtered or retried safely |
+| 4 | Generated quiz quality hardening | GEN-03, QUAL-01, QUAL-02 | Duplicate, weak, or off-topic generated quizzes fail closed with app-safe errors while happy-path rendering stays intact |
 
 ## Phase Details
 
@@ -74,6 +75,36 @@ Planned prompts:
 - Results consistently display as usable MCQs.
 - Broken model output does not leak into the user-facing experience.
 - The generation flow is ready for future quiz/scoring/history expansion.
+
+**Plans:** 1 plan
+
+Planned prompts:
+
+- [ ] `03-01-PLAN.md` — Minimal user-facing trigger, MCQ rendering, and app-safe error display
+
+### Phase 4 — Generated quiz quality hardening
+
+**Goal:** Tighten the generation pipeline so accepted quizzes are not only well-formed, but also meaningfully usable.
+
+**Scope:**
+
+- Reject duplicate and near-duplicate questions.
+- Reject questions that are weakly related to the requested topic.
+- Reject weak, empty, or non-informative explanations.
+- Reject malformed or inconsistent answer/option relationships.
+- Keep exact question-count matching and app-safe error handling.
+
+**Success looks like:**
+
+- Low-quality generated quizzes fail closed before reaching the UI.
+- Clear app-safe failure messages explain the quality rejection.
+- Acceptable quizzes still render exactly as before.
+
+**Plans:** 1 plan
+
+Planned prompts:
+
+- [ ] `04-01-PLAN.md` — Quality heuristics, stricter validation, and end-to-end failure coverage
 
 ## Future Expansion
 

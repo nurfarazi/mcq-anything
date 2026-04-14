@@ -1,4 +1,5 @@
 import type { MCQGenerationResponse } from '../llm';
+import { findQuizQualityIssue } from './quiz-quality';
 import { APP_ERROR_CODES, type QuizGenerationResult } from './quiz-types';
 
 function invalidModelOutput(message: string): QuizGenerationResult {
@@ -41,6 +42,7 @@ function isValidQuestion(question: unknown): question is MCQGenerationResponse['
  */
 export function validateQuizGenerationResponse(
   response: MCQGenerationResponse,
+    topic: string,
   requestedQuestionCount: number,
 ): QuizGenerationResult | { ok: true; value: MCQGenerationResponse } {
   if (!Number.isInteger(requestedQuestionCount) || requestedQuestionCount <= 0) {
@@ -58,6 +60,12 @@ export function validateQuizGenerationResponse(
   if (!response.questions.every(isValidQuestion)) {
     return invalidModelOutput('Returned MCQs contained malformed items.');
   }
+
+    const qualityIssue = findQuizQualityIssue(response, topic);
+
+    if (qualityIssue) {
+        return invalidModelOutput(qualityIssue.message);
+    }
 
   return {
     ok: true,

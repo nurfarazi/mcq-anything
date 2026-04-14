@@ -77,16 +77,16 @@ async function main(): Promise<void> {
         return {
           questions: [
             {
-              question: 'What is Astronomy?',
-              options: ['A', 'B', 'C', 'D'] as const,
-              correctAnswer: 1,
-              explanation: 'Example explanation.',
+              question_text: 'Which planet is closest to the Sun?',
+              options: ['Mercury', 'Venus', 'Earth', 'Mars'] as const,
+              correct_answer: 0,
+              explanation_text: 'Mercury is the closest planet to the Sun in our solar system.',
             },
             {
-              question: 'Second question?',
-              options: ['A', 'B', 'C', 'D'] as const,
-              correctAnswer: 2,
-              explanation: 'Example explanation.',
+              question_text: 'What is the name of our galaxy?',
+              options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'] as const,
+              correct_answer: 1,
+              explanation_text: 'Our solar system is located in the Milky Way galaxy.',
             },
           ],
         };
@@ -104,16 +104,16 @@ async function main(): Promise<void> {
       value: {
         questions: [
           {
-            question: 'What is Astronomy?',
-            options: ['A', 'B', 'C', 'D'],
-            correctAnswer: 1,
-            explanation: 'Example explanation.',
+            question: 'Which planet is closest to the Sun?',
+            options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+            correctAnswer: 0,
+            explanation: 'Mercury is the closest planet to the Sun in our solar system.',
           },
           {
-            question: 'Second question?',
-            options: ['A', 'B', 'C', 'D'],
-            correctAnswer: 2,
-            explanation: 'Example explanation.',
+            question: 'What is the name of our galaxy?',
+            options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'],
+            correctAnswer: 1,
+            explanation: 'Our solar system is located in the Milky Way galaxy.',
           },
         ],
       },
@@ -135,10 +135,10 @@ async function main(): Promise<void> {
         return {
           questions: [
             {
-              question: 'Only one question',
+              question_text: 'Only one question',
               options: ['A', 'B', 'C', 'D'] as const,
-              correctAnswer: 0,
-              explanation: 'Example explanation.',
+              correct_answer: 0,
+              explanation_text: 'Example explanation with enough detail to be valid.',
             },
           ],
         };
@@ -153,6 +153,39 @@ async function main(): Promise<void> {
     'INVALID_MODEL_OUTPUT',
     'rejects model output that does not match the requested question count',
   );
+
+    installFetch(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+            throw new Error(`unexpected endpoint: ${url}`);
+        }
+
+        return {
+            ok: true,
+            status: 200,
+            async json() {
+                return {
+                    questions: [
+                        {
+                      question_text: 'What is the capital of France?',
+                      options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
+                      correct_answer: 2,
+                      explanation_text: 'Paris is the capital city of France.',
+                        },
+                    ],
+                };
+            },
+        } as Response;
+    });
+
+    const qualityFailure = await generateQuiz({ topic: 'Astronomy', questionCount: 1 });
+
+    assertFailure(
+        qualityFailure,
+        'INVALID_MODEL_OUTPUT',
+        'rejects off-topic model output through the generation use case',
+    );
 
   installFetch(async () => {
     throw new Error('provider exploded');

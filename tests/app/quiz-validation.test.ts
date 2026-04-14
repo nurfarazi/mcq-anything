@@ -27,25 +27,25 @@ const validResponse = {
       question: 'What is the chemical symbol for water?',
       options: ['H2O', 'CO2', 'O2', 'NaCl'] as const,
       correctAnswer: 0,
-      explanation: 'H2O is the chemical formula for water.',
+      explanation: 'H2O is the chemical formula for water, which makes it the correct symbol.',
     },
     {
       question: 'How many planets are in the solar system?',
       options: ['7', '8', '9', '10'] as const,
       correctAnswer: 1,
-      explanation: 'There are eight recognized planets.',
+      explanation: 'There are eight recognized planets in the solar system.',
     },
   ],
 } as const;
 
 assertDeepEqual(
-  validateQuizGenerationResponse(validResponse, 2),
+    validateQuizGenerationResponse(validResponse, 'Science', 2),
   { ok: true, value: validResponse },
   'accepts a fully valid response that matches the requested count',
 );
 
 assertFailure(
-  validateQuizGenerationResponse(validResponse, 1),
+    validateQuizGenerationResponse(validResponse, 'Science', 1),
   'INVALID_MODEL_OUTPUT',
   'rejects responses whose question count does not match the request',
 );
@@ -62,6 +62,7 @@ assertFailure(
         },
       ],
     } as unknown as Parameters<typeof validateQuizGenerationResponse>[0],
+      'Science',
     1,
   ),
   'INVALID_MODEL_OUTPUT',
@@ -80,6 +81,7 @@ assertFailure(
         },
       ],
     } as unknown as Parameters<typeof validateQuizGenerationResponse>[0],
+      'Science',
     1,
   ),
   'INVALID_MODEL_OUTPUT',
@@ -98,8 +100,48 @@ assertFailure(
         },
       ],
     } as unknown as Parameters<typeof validateQuizGenerationResponse>[0],
+      'Science',
     1,
   ),
   'INVALID_MODEL_OUTPUT',
   'rejects questions with an empty explanation',
 );
+
+assertFailure(
+    validateQuizGenerationResponse(
+        {
+            questions: [
+                {
+                    question: 'What is the capital of France?',
+                    options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
+                    correctAnswer: 2,
+                    explanation: 'Paris is the capital city of France.',
+                },
+            ],
+        } as const,
+        'Physics',
+        1,
+    ),
+    'INVALID_MODEL_OUTPUT',
+    'rejects questions that are not sufficiently related to the requested topic',
+);
+
+assertFailure(
+    validateQuizGenerationResponse(
+        {
+            questions: [
+                {
+                    question: 'Which planet is closest to the Sun?',
+                    options: ['Mercury', 'Venus', 'Earth', 'Mars'] as const,
+                    correctAnswer: 0,
+                    explanation: 'Mercury is closest.',
+                },
+            ],
+        } as const,
+        'Astronomy',
+        1,
+    ),
+    'INVALID_MODEL_OUTPUT',
+    'rejects weak explanations before results reach the user',
+);
+
