@@ -52,6 +52,12 @@ Planned prompts:
 - A user can pick a topic and quantity and initiate generation.
 - The request payload is clean enough to support any configured provider.
 
+**Plans:** 1 plan
+
+Planned prompts:
+
+- [ ] `02-01-PLAN.md` — Application quiz-generation workflow, validation gate, and minimal trigger path
+
 ### Phase 3 — MCQ generation and output validation
 
 **Goal:** Turn model output into trustworthy learning content.
