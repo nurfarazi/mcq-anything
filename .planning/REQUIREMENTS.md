@@ -24,6 +24,13 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **QUAL-01**: Generated output is validated against an expected MCQ structure before display.
 - [ ] **QUAL-02**: The app handles malformed or incomplete AI output without exposing broken results to users.
 
+### Persistence and Lifecycle
+
+- [ ] **PERS-01**: Successfully generated quizzes are stored with topic, questions, correct answers, explanations, and a timestamp.
+- [ ] **PERS-02**: The app can list previously generated quiz sessions.
+- [ ] **PERS-03**: The app can retrieve an individual stored quiz session by session id.
+- [ ] **PERS-04**: Quiz persistence stays behind a minimal local app-layer repository interface and does not depend on provider or UI internals.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -32,7 +39,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 - **LEARN-01**: User can run scored quizzes from generated questions.
 - **LEARN-02**: User can review correct and incorrect answers after a quiz.
-- **LEARN-03**: User can save or revisit past topics and generated question sets.
+- **LEARN-03**: User can sync or share past topics and generated question sets across devices.
 - **LEARN-04**: User can track progress over time.
 
 ## Out of Scope
@@ -43,7 +50,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | --- | --- |
 | Authentication and user accounts | Not required for the core single-user generation flow |
 | Scoring and grading | Deferred to v2 to keep the initial release focused |
-| Review mode and topic history | Deferred until persistence and quiz workflows are intentionally added |
+| Review mode | Deferred to v2 to keep the initial release focused |
 | Provider-specific feature branching | Conflicts with the configuration-only provider requirement |
 
 ## Traceability
@@ -60,11 +67,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROV-03 | Phase 1 | Pending |
 | QUAL-01 | Phase 3 | Pending |
 | QUAL-02 | Phase 3 | Pending |
+| PERS-01 | Phase 5 | Pending |
+| PERS-02 | Phase 5 | Pending |
+| PERS-03 | Phase 5 | Pending |
+| PERS-04 | Phase 5 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 8 total
-- Mapped to phases: 8
+- v1 requirements: 12 total
+- Mapped to phases: 12
 - Unmapped: 0 ✓
 
 ---

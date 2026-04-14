@@ -2,7 +2,7 @@
 
 ## What This Is
 
-MCQ Anything is a learning application that lets a user choose a topic, request a number of multiple-choice questions, and receive generated MCQs with answers and explanations. It is designed to work with interchangeable AI providers so the default local LM Studio model can be replaced with another provider, such as OpenAI ChatGPT, through configuration rather than business logic changes.
+MCQ Anything is a learning application that lets a user choose a topic, request a number of multiple-choice questions, receive generated MCQs with answers and explanations, and revisit previously generated quiz sessions. It is designed to work with interchangeable AI providers so the default local LM Studio model can be replaced with another provider, such as OpenAI ChatGPT, through configuration rather than business logic changes.
 
 ## Core Value
 
@@ -21,12 +21,13 @@ Generate reliable topic-based MCQs through a provider-agnostic system that can s
 - [ ] The app returns multiple-choice questions with answers and explanations.
 - [ ] AI provider selection is configurable, so switching from LM Studio to another provider does not require business logic changes.
 - [ ] The app validates generated output structure before presenting results.
+- [ ] The app stores successful generated quizzes with topic, questions, answers, explanations, and timestamp.
+- [ ] The app can list and retrieve past quiz sessions through a minimal local persistence layer.
 
 ### Out of Scope
 
 - [ ] User accounts and authentication — not needed for the initial generation flow.
 - [ ] Quiz scoring, grading, and review modes — reserved for future expansion.
-- [ ] Topic history and saved question libraries — defer until persistence is intentionally introduced.
 - [ ] Provider-specific business logic branches — would undermine the configuration-only provider goal.
 
 ## Context
@@ -34,14 +35,16 @@ Generate reliable topic-based MCQs through a provider-agnostic system that can s
 - Greenfield project in a fresh repository with no existing planning artifacts.
 - Default AI provider is expected to be a locally hosted LM Studio model.
 - The system should be designed so provider swaps are configuration changes only.
-- The initial product vision is a flexible learning platform that can later expand into quizzes, scoring, review, and topic history.
+- The initial product vision is a flexible learning platform that can later expand into quizzes, scoring, review, and advanced history features.
+- Phase 5 adds a minimal local persistence path for storing and retrieving generated quiz sessions.
+- Future scoring and review features should not slow the first release.
 
 ## Constraints
 
 - **Architecture**: AI provider behavior must be abstracted behind a stable interface — so backend logic stays provider-neutral.
 - **Compatibility**: Default to LM Studio locally — because it is the baseline provider in the stated product vision.
 - **Reliability**: Generated MCQ output must be validated — to protect the user experience from malformed model responses.
-- **Scope**: Keep v1 focused on generation — so future quiz/history features do not slow the first release.
+- **Scope**: Keep v1 focused on generation and lightweight lifecycle support — so future scoring and review features do not slow the first release.
 
 ## Key Decisions
 
@@ -49,7 +52,7 @@ Generate reliable topic-based MCQs through a provider-agnostic system that can s
 | --- | --- | --- |
 | Default provider is LM Studio locally hosted | Matches the requested baseline provider and supports local development | — Pending |
 | Provider switching must be configuration-only | Prevents provider lock-in and keeps business logic stable | — Pending |
-| Future quiz, scoring, review, and history features are deferred | Keeps the initial release centered on the core generation loop | — Pending |
+| Future scoring and review features are deferred | Keeps the initial release centered on the core generation loop | — Pending |
 
 ## Evolution
 
@@ -74,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ## Last updated
 
-2026-04-15 after initialization
+2026-04-15 after phase 5 planning update

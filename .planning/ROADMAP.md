@@ -11,6 +11,7 @@
 | 2 | Topic and count input flow | GEN-01, GEN-02 | User can choose a topic and number of questions and submit a generation request |
 | 3 | MCQ generation and output validation | GEN-03, QUAL-01, QUAL-02 | Generated MCQs render with answers/explanations and invalid output is filtered or retried safely |
 | 4 | Generated quiz quality hardening | GEN-03, QUAL-01, QUAL-02 | Duplicate, weak, or off-topic generated quizzes fail closed with app-safe errors while happy-path rendering stays intact |
+| 5 | Quiz persistence and lifecycle | PERS-01, PERS-02, PERS-03, PERS-04 | Successful quizzes are stored with session metadata and past quizzes can be retrieved through a minimal local persistence layer |
 
 ## Phase Details
 
@@ -74,7 +75,7 @@ Planned prompts:
 
 - Results consistently display as usable MCQs.
 - Broken model output does not leak into the user-facing experience.
-- The generation flow is ready for future quiz/scoring/history expansion.
+- The generation flow is ready for future scoring/review expansion.
 
 **Plans:** 1 plan
 
@@ -106,17 +107,40 @@ Planned prompts:
 
 - [ ] `04-01-PLAN.md` — Quality heuristics, stricter validation, and end-to-end failure coverage
 
+### Phase 5 — Quiz persistence and lifecycle
+
+**Goal:** Persist generated quiz sessions so users can revisit earlier quizzes without changing generation, provider, or validation behavior.
+
+**Scope:**
+
+- Store successful generated quizzes with topic, questions, correct answers, explanations, and timestamp.
+- Record a basic quiz session structure for each generated quiz.
+- Retrieve past quiz sessions through a minimal local persistence layer.
+- Keep the public generation boundary and quality validation unchanged.
+
+**Success looks like:**
+
+- Every successful generation can be persisted as a retrievable quiz session.
+- Past quiz sessions can be listed and fetched without involving provider details.
+- Generation failures do not create stored sessions.
+
+**Plans:** 1 plan
+
+Planned prompts:
+
+- [ ] `05-01-PLAN.md` — Persistence contracts, quiz session lifecycle, and local storage access layer
+
 ## Future Expansion
 
 These are intentionally not scheduled yet:
 
 - Quiz scoring and grading
 - Answer review modes
-- Topic history and saved sets
-- User accounts and persistence
+- User accounts
+- Cross-device sync and scale-out persistence
 
 ---
 
 ## Last updated
 
-2026-04-15 after initialization
+2026-04-15 after phase 5 planning update
