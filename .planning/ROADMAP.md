@@ -30,6 +30,12 @@
 - The default provider resolves to the local LM Studio setup.
 - Provider selection is not hard-coded into feature logic.
 
+**Plans:** 1 plan
+
+Planned prompts:
+
+- [ ] `01-01-PLAN.md` — Provider-neutral foundation, LM Studio default wiring, and config-only swapping
+
 ### Phase 2 — Topic and count input flow
 
 **Goal:** Let the user specify what they want and how much of it they want.
