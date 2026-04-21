@@ -1,8 +1,7 @@
 import type { MCQGenerationRequest, MCQGenerationResponse } from '../../src/llm/types';
 import {
   mapLmStudioResponseToMcqGenerationResponse,
-  mapMcqGenerationRequestToLmStudioPayload,
-  type LmStudioRequestPayload,
+  type LmStudioChatRequest,
   type LmStudioResponsePayload,
 } from '../../src/llm/providers/lm-studio';
 
@@ -14,8 +13,8 @@ type Equal<A, B> =
 
 type Expect<T extends true> = T;
 
-type RequestPayloadShape = Expect<
-  Equal<LmStudioRequestPayload, { topic: string; question_count: number }>
+type ChatRequestShape = Expect<
+  Equal<LmStudioChatRequest, { model: string; system_prompt: string; input: string }>
 >;
 
 type ResponsePayloadShape = Expect<
@@ -48,17 +47,6 @@ function assertDeepEqual(actual: unknown, expected: unknown, label: string): voi
     throw new Error(`${label}: expected ${expectedJson}, received ${actualJson}`);
   }
 }
-
-const sharedRequest: MCQGenerationRequest = {
-  topic: 'Photosynthesis',
-  questionCount: 3,
-};
-
-assertDeepEqual(
-  mapMcqGenerationRequestToLmStudioPayload(sharedRequest),
-  { topic: 'Photosynthesis', question_count: 3 },
-  'maps the shared request into a provider-specific payload',
-);
 
 const providerResponse: LmStudioResponsePayload = {
   questions: [

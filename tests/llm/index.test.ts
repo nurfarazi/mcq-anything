@@ -52,14 +52,16 @@ async function main(): Promise<void> {
         status: 200,
         async json() {
           return {
-            questions: [
-              {
-                question_text: 'What is the capital of France?',
-                options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
-                correct_answer: 2,
-                explanation_text: 'Paris is the capital city of France.',
-              },
-            ],
+            output: JSON.stringify({
+              questions: [
+                {
+                  question_text: 'What is the capital of France?',
+                  options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+                  correct_answer: 2,
+                  explanation_text: 'Paris is the capital city of France.',
+                },
+              ],
+            }),
           };
         },
       }),

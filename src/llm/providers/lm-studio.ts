@@ -1,8 +1,21 @@
 import type { MCQGenerationRequest, MCQGenerationResponse } from '../types';
 
-export interface LmStudioRequestPayload {
-  topic: string;
-  question_count: number;
+const DEFAULT_MODEL = 'google/gemma-4-31b';
+
+const SYSTEM_PROMPT =
+  'You are a quiz generation assistant. Respond ONLY with valid JSON — no prose, no markdown fences. ' +
+  'Use this exact schema: ' +
+  '{"questions":[{"question_text":"...","options":["A","B","C","D"],"correct_answer":0,"explanation_text":"..."}]} ' +
+  'correct_answer is the 0-based index of the correct option (0, 1, 2, or 3).';
+
+export interface LmStudioChatRequest {
+  model: string;
+  system_prompt: string;
+  input: string;
+}
+
+export interface LmStudioChatResponse {
+  output: string;
 }
 
 export interface LmStudioQuestionPayload {
@@ -33,41 +46,8 @@ export type LmStudioFetch = (
 
 export interface LmStudioTransportOptions {
   endpoint: string;
+  model?: string;
   fetchImpl?: LmStudioFetch;
-}
-
-/**
- * Convert the shared generation request into an LM Studio-specific payload.
- *
- * This is intentionally structural only: transport, model selection, retries,
- * and request execution belong in the later transport phase.
- */
-export function mapMcqGenerationRequestToLmStudioPayload(
-  request: MCQGenerationRequest,
-): LmStudioRequestPayload {
-  return {
-    topic: request.topic,
-    question_count: request.questionCount,
-  };
-}
-
-/**
- * Normalize an LM Studio response into the shared MCQ generation contract.
- *
- * Any malformed or incomplete payload handling belongs in the later validation
- * and transport phases; this function only performs field mapping.
- */
-export function mapLmStudioResponseToMcqGenerationResponse(
-  response: LmStudioResponsePayload,
-): MCQGenerationResponse {
-  return {
-    questions: response.questions.map((question) => ({
-      question: question.question_text,
-      options: question.options,
-      correctAnswer: question.correct_answer,
-      explanation: question.explanation_text,
-    })),
-  };
 }
 
 function getGlobalFetch(): LmStudioFetch {
@@ -112,6 +92,16 @@ function isLmStudioResponsePayload(value: unknown): value is LmStudioResponsePay
   return value.questions.every(isLmStudioQuestionPayload);
 }
 
+function isLmStudioChatResponse(value: unknown): value is LmStudioChatResponse {
+  return isRecord(value) && typeof value.output === 'string';
+}
+
+function extractJsonFromOutput(output: string): unknown {
+  // Strip optional markdown code fence the model may wrap around JSON
+  const stripped = output.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  return JSON.parse(stripped);
+}
+
 function toSafeTransportError(reason: string): Error {
   return new Error(`LM Studio request failed: ${reason}`);
 }
@@ -120,18 +110,31 @@ function toSafeResponseError(reason: string): Error {
   return new Error(`LM Studio response was invalid: ${reason}`);
 }
 
-/**
- * Execute the LM Studio request/response cycle using the shared contract.
- *
- * This stays inside the adapter so transport, provider-specific payloads, and
- * safe error handling do not leak into business logic or provider selection.
- */
+export function mapLmStudioResponseToMcqGenerationResponse(
+  response: LmStudioResponsePayload,
+): MCQGenerationResponse {
+  return {
+    questions: response.questions.map((question) => ({
+      question: question.question_text,
+      options: question.options,
+      correctAnswer: question.correct_answer,
+      explanation: question.explanation_text,
+    })),
+  };
+}
+
 export async function requestMcqGenerationFromLmStudio(
   request: MCQGenerationRequest,
   options: LmStudioTransportOptions,
 ): Promise<MCQGenerationResponse> {
   const fetchImpl = options.fetchImpl ?? getGlobalFetch();
-  const payload = mapMcqGenerationRequestToLmStudioPayload(request);
+  const model = options.model ?? DEFAULT_MODEL;
+
+  const chatRequest: LmStudioChatRequest = {
+    model,
+    system_prompt: SYSTEM_PROMPT,
+    input: `Generate ${request.questionCount} multiple choice questions about ${request.topic}.`,
+  };
 
   let response: LmStudioFetchResponse;
 
@@ -141,7 +144,7 @@ export async function requestMcqGenerationFromLmStudio(
       headers: {
         'content-type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(chatRequest),
     });
   } catch {
     throw toSafeTransportError('request could not be completed');
@@ -159,9 +162,21 @@ export async function requestMcqGenerationFromLmStudio(
     throw toSafeResponseError('response body could not be parsed');
   }
 
-  if (!isLmStudioResponsePayload(rawResponse)) {
+  if (!isLmStudioChatResponse(rawResponse)) {
+    throw toSafeResponseError('response did not contain an output field');
+  }
+
+  let parsedOutput: unknown;
+
+  try {
+    parsedOutput = extractJsonFromOutput(rawResponse.output);
+  } catch {
+    throw toSafeResponseError('output field did not contain valid JSON');
+  }
+
+  if (!isLmStudioResponsePayload(parsedOutput)) {
     throw toSafeResponseError('payload shape did not match the expected contract');
   }
 
-  return mapLmStudioResponseToMcqGenerationResponse(rawResponse);
+  return mapLmStudioResponseToMcqGenerationResponse(parsedOutput);
 }

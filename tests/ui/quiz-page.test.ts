@@ -44,7 +44,7 @@ function installQuizResponse(
   installFetch(async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -53,12 +53,14 @@ function installQuizResponse(
       status: 200,
       async json() {
         return {
-          questions: questions.map((question) => ({
-            question_text: question.question,
-            options: question.options,
-            correct_answer: question.correctAnswer,
-            explanation_text: question.explanation,
-          })),
+          output: JSON.stringify({
+            questions: questions.map((question) => ({
+              question_text: question.question,
+              options: question.options,
+              correct_answer: question.correctAnswer,
+              explanation_text: question.explanation,
+            })),
+          }),
         };
       },
     } as Response;
@@ -95,10 +97,14 @@ async function main(): Promise<void> {
 
   assertContains(successOutput, '<!doctype html>', 'renders a successful quiz flow through the public app boundary');
   assertContains(successOutput, 'https://unpkg.com/vue@3/dist/vue.global.prod.js', 'loads Vue for the public app boundary');
-  assertContains(successOutput, 'Practice one multiple-choice question at a time.', 'renders the hero copy');
+  assertContains(successOutput, 'Answer one question at a time.', 'renders the hero copy');
+  assertContains(successOutput, 'Question 1 of 1', 'renders per-question progress for the quiz flow');
   assertContains(successOutput, 'What is the capital of France?', 'renders the question text');
-  assertContains(successOutput, 'Paris is the capital city of France.', 'renders the explanation text');
-  assertContains(successOutput, 'Reveal answers', 'renders the primary action');
+  assertContains(successOutput, 'Submit answers', 'renders the quiz submission action');
+
+  if (successOutput.includes('Paris is the capital city of France.')) {
+    throw new Error('does not leak answer explanations before the user submits the quiz');
+  }
 
   installQuizResponse([
     {

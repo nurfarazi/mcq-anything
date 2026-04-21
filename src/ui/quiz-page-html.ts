@@ -36,7 +36,7 @@ function buildStyles(): string {
 
     body { padding: 32px 18px 48px; }
 
-    button, input, textarea { font: inherit; }
+    button { font: inherit; }
 
     .shell {
       width: min(1040px, 100%);
@@ -64,15 +64,19 @@ function buildStyles(): string {
       mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 42%);
     }
 
-    .hero {
+    .hero,
+    .stack {
       position: relative;
       z-index: 1;
+    }
+
+    .hero {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       gap: 20px;
       padding-bottom: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       border-bottom: 1px solid var(--border);
     }
 
@@ -115,12 +119,10 @@ function buildStyles(): string {
     }
 
     .summary {
-      position: relative;
-      z-index: 1;
       display: flex;
       gap: 14px;
       flex-wrap: wrap;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .summary-chip {
@@ -139,13 +141,12 @@ function buildStyles(): string {
     }
 
     .stack {
-      position: relative;
-      z-index: 1;
       display: grid;
       gap: 18px;
     }
 
     .question-card,
+    .result-card,
     .error-card {
       padding: 22px;
       border-radius: 22px;
@@ -153,7 +154,8 @@ function buildStyles(): string {
       background: rgba(255, 255, 255, 0.88);
     }
 
-    .question-card {
+    .question-card,
+    .result-card {
       display: grid;
       gap: 18px;
       box-shadow: 0 12px 30px rgba(39, 24, 13, 0.06);
@@ -188,7 +190,8 @@ function buildStyles(): string {
       max-width: 28ch;
     }
 
-    .option-list {
+    .option-list,
+    .result-list {
       display: grid;
       gap: 10px;
     }
@@ -215,9 +218,15 @@ function buildStyles(): string {
     }
 
     .option:focus-visible,
-    .controls button:focus-visible {
+    .controls button:focus-visible,
+    .link-button:focus-visible {
       outline: 3px solid rgba(38, 70, 83, 0.28);
       outline-offset: 2px;
+    }
+
+    .option[disabled] {
+      cursor: default;
+      transform: none;
     }
 
     .option-label {
@@ -234,7 +243,9 @@ function buildStyles(): string {
       font-weight: 700;
     }
 
-    .option-text {
+    .option-text,
+    .feedback-copy,
+    .status-copy {
       line-height: 1.5;
       font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
     }
@@ -254,27 +265,16 @@ function buildStyles(): string {
       background: rgba(140, 47, 57, 0.1);
     }
 
-    .feedback {
-      display: grid;
-      gap: 8px;
-      padding: 16px 18px;
-      border-radius: 18px;
-      background: rgba(45, 106, 79, 0.08);
-      color: var(--text);
-      line-height: 1.6;
-      font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
-    }
-
-    .feedback strong { color: var(--success); }
-
     .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .controls button {
+    .controls button,
+    .link-button {
       padding: 12px 16px;
       border-radius: 999px;
       border: 1px solid var(--border);
@@ -282,20 +282,36 @@ function buildStyles(): string {
       color: var(--text);
       cursor: pointer;
       transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+      text-decoration: none;
+      font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
     }
 
-    .controls button:hover {
+    .controls button:hover,
+    .link-button:hover {
       transform: translateY(-1px);
       border-color: rgba(38, 70, 83, 0.32);
     }
 
-    .controls .primary {
+    .controls .primary,
+    .link-button.primary {
       background: var(--brand);
       color: white;
       border-color: var(--brand);
     }
 
-    .controls .primary:hover { background: var(--brand-strong); }
+    .controls .primary:hover,
+    .link-button.primary:hover { background: var(--brand-strong); }
+
+    .controls button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+    }
+
+    .status-copy.error,
+    .error-card {
+      color: var(--danger);
+    }
 
     .error-card { border-left: 6px solid var(--danger); }
 
@@ -319,19 +335,53 @@ function buildStyles(): string {
       text-transform: uppercase;
     }
 
-    .empty-state {
-      padding: 18px;
-      border: 1px dashed rgba(38, 70, 83, 0.24);
+    .result-summary {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .result-chip {
+      padding: 14px 16px;
       border-radius: 18px;
-      color: var(--muted);
-      font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
+      border: 1px solid var(--border);
+      background: rgba(45, 106, 79, 0.08);
+      min-width: 140px;
+    }
+
+    .result-chip strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.12rem;
+      color: var(--success);
+    }
+
+    .result-item {
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      display: grid;
+      gap: 8px;
+    }
+
+    .result-item.correct {
+      border-color: rgba(45, 106, 79, 0.35);
+      background: rgba(45, 106, 79, 0.08);
+    }
+
+    .result-item.wrong {
+      border-color: rgba(140, 47, 57, 0.28);
+      background: rgba(140, 47, 57, 0.06);
     }
 
     @media (max-width: 720px) {
       body { padding: 14px; }
       .page { padding: 18px; border-radius: 22px; }
-      .hero { margin-bottom: 20px; }
-      .question-card, .error-card { padding: 18px; }
+      .question-card,
+      .result-card,
+      .error-card { padding: 18px; }
+      .controls { justify-content: stretch; }
     }
   `;
 }
@@ -342,62 +392,90 @@ function buildTemplate(): string {
       <header class="hero">
         <div>
           <p class="eyebrow">MCQ Anything</p>
-          <h1>Practice one multiple-choice question at a time.</h1>
-          <p class="subtitle">A tiny Vue-powered quiz page that keeps the generated MCQs visible, readable, and easy to answer.</p>
+          <h1>Answer one question at a time.</h1>
+          <p class="subtitle">Move through the quiz step by step, submit once every question is answered, and let the server score the whole attempt.</p>
         </div>
-        <div class="hero-badge">Vue 3 · static HTML shell</div>
+        <div class="hero-badge">Vue 3 · session play page</div>
       </header>
 
-      <section v-if="model.kind === 'success'" class="stack" aria-label="Generated quiz">
+      <section v-if="model.kind === 'success'" class="stack" aria-label="Stored quiz session">
         <div class="summary">
-          <div class="summary-chip">Question set<strong>{{ model.questions.length }}</strong></div>
-          <div class="summary-chip">Answers revealed<strong>{{ revealed ? 'Yes' : 'No' }}</strong></div>
-          <div class="summary-chip">Selected answers<strong>{{ answeredCount }}</strong></div>
+          <div class="summary-chip">Topic<strong>{{ model.topic }}</strong></div>
+          <div class="summary-chip">Progress<strong>{{ questionProgress }}</strong></div>
+          <div class="summary-chip">Answered<strong>{{ answeredCount }} / {{ model.questions.length }}</strong></div>
         </div>
 
-        <article v-for="(question, questionIndex) in model.questions" :key="questionIndex" class="question-card">
+        <article class="question-card">
           <div class="question-headline">
-            <span class="question-index">Question {{ questionIndex + 1 }}</span>
-            <span class="question-index">Answer {{ answerLabel(selectedAnswers[questionIndex]) }}</span>
+            <span class="question-index">{{ questionProgress }}</span>
+            <span class="question-index">Selected {{ answerLabel(currentAnswer) }}</span>
           </div>
 
-          <h2 class="question-title">{{ question.question }}</h2>
+          <h2 class="question-title">{{ currentQuestion.question }}</h2>
+          <p class="status-copy">Choose one option before moving on. The server will score everything after you submit.</p>
 
           <div class="option-list" role="list">
             <button
-              v-for="(option, optionIndex) in question.options"
+              v-for="(option, optionIndex) in currentQuestion.options"
               :key="optionIndex"
               type="button"
               class="option"
-              :class="optionClass(questionIndex, optionIndex, question.correctAnswer)"
-              @click="selectAnswer(questionIndex, optionIndex)"
-              :aria-pressed="selectedAnswers[questionIndex] === optionIndex"
+              :class="optionClass(currentQuestionIndex, optionIndex)"
+              @click="selectAnswer(currentQuestionIndex, optionIndex)"
+              :aria-pressed="selectedAnswers[currentQuestionIndex] === optionIndex"
+              :disabled="submittedAttempt !== null || submitting"
             >
               <span class="option-label">{{ labels[optionIndex] }}</span>
               <span class="option-text">{{ option }}</span>
             </button>
           </div>
 
-          <section v-if="revealed" class="feedback" :aria-label="'Feedback for question ' + (questionIndex + 1)">
-            <strong>Correct answer: {{ question.correctAnswer }}</strong>
-            <p>{{ question.explanation }}</p>
-          </section>
+          <p v-if="submissionError" class="status-copy error" aria-live="polite">{{ submissionError }}</p>
+
+          <div class="controls">
+            <div class="actions-left">
+              <button type="button" @click="goToPreviousQuestion" :disabled="!canGoPrevious">Previous question</button>
+              <button type="button" @click="goToNextQuestion" :disabled="!canGoNext">Next question</button>
+            </div>
+            <div class="actions-right">
+              <a class="link-button" href="/">Back to generator</a>
+              <button type="button" class="primary" @click="submitAnswers" :disabled="!canSubmit">{{ submitButtonLabel }}</button>
+            </div>
+          </div>
         </article>
 
-        <div class="controls">
-          <button type="button" class="primary" @click="revealAnswers">Reveal answers</button>
-          <button type="button" @click="resetQuiz">Reset quiz</button>
-        </div>
+        <article v-if="submittedAttempt" class="result-card" aria-label="Quiz results">
+          <div>
+            <span class="question-index">Attempt saved</span>
+            <h2 class="question-title">Your score is ready.</h2>
+            <p class="status-copy">The server checked every answer and stored the result with this quiz session.</p>
+          </div>
+
+          <div class="result-summary">
+            <div class="result-chip">Correct answers<strong>{{ submittedAttempt.score.correctCount }} / {{ submittedAttempt.score.totalQuestions }}</strong></div>
+            <div class="result-chip">Percentage<strong>{{ submittedAttempt.score.percentage }}%</strong></div>
+          </div>
+
+          <div class="result-list">
+            <article
+              v-for="question in submittedAttempt.questions"
+              :key="question.questionIndex"
+              class="result-item"
+              :class="question.isCorrect ? 'correct' : 'wrong'"
+            >
+              <strong>{{ question.questionIndex + 1 }}. {{ question.question }}</strong>
+              <p class="feedback-copy">Your answer: {{ answerLabel(question.selectedAnswer) }} · Correct answer: {{ answerLabel(question.correctAnswer) }}</p>
+              <p class="feedback-copy">{{ question.explanation }}</p>
+            </article>
+          </div>
+        </article>
       </section>
 
       <section v-else class="error-card" aria-label="Quiz generation error">
         <div class="error-code">Error: {{ model.error.code }}</div>
-        <h2 class="question-title">We could not generate the quiz.</h2>
+        <h2 class="question-title">We could not prepare the quiz.</h2>
         <p>{{ model.error.message }}</p>
-      </section>
-
-      <section v-if="model.kind === 'success' && model.questions.length === 0" class="empty-state">
-        No questions were generated.
+        <a class="link-button primary" href="/">Back to generator</a>
       </section>
     </div>
   `;
@@ -435,48 +513,108 @@ export function renderQuizPageHtml(viewModel: QuizPageViewModel): string {
     '        return {',
     '          model,',
     '          labels: ["A", "B", "C", "D"],',
+    '          currentQuestionIndex: 0,',
     '          selectedAnswers: model.kind === "success" ? model.questions.map(() => null) : [],',
-    '          revealed: false,',
+    '          submitting: false,',
+    '          submissionError: "",',
+    '          submittedAttempt: null,',
     '        };',
     '      },',
     '      computed: {',
+    '        currentQuestion() {',
+    '          return this.model.kind === "success" ? this.model.questions[this.currentQuestionIndex] : null;',
+    '        },',
+    '        currentAnswer() {',
+    '          return this.model.kind === "success" ? this.selectedAnswers[this.currentQuestionIndex] : null;',
+    '        },',
     '        answeredCount() {',
     '          return this.selectedAnswers.filter((value) => value !== null).length;',
+    '        },',
+    '        questionProgress() {',
+    '          if (this.model.kind !== "success") {',
+    '            return "Question 0 of 0";',
+    '          }',
+    '',
+    '          return `Question ${this.currentQuestionIndex + 1} of ${this.model.questions.length}`;',
+    '        },',
+    '        canGoPrevious() {',
+    '          return this.currentQuestionIndex > 0 && this.submitting === false;',
+    '        },',
+    '        canGoNext() {',
+    '          return this.model.kind === "success" && this.currentQuestionIndex < this.model.questions.length - 1 && this.submitting === false;',
+    '        },',
+    '        canSubmit() {',
+    '          return this.model.kind === "success" && this.answeredCount === this.model.questions.length && this.submitting === false && this.submittedAttempt === null;',
+    '        },',
+    '        submitButtonLabel() {',
+    '          if (this.submitting) {',
+    '            return "Submitting...";',
+    '          }',
+    '',
+    '          return this.submittedAttempt === null ? "Submit answers" : "Answers submitted";',
     '        },',
     '      },',
     '      methods: {',
     '        selectAnswer(questionIndex, optionIndex) {',
-    '          if (this.model.kind !== "success") {',
+    '          if (this.model.kind !== "success" || this.submittedAttempt !== null || this.submitting) {',
     '            return;',
     '          }',
     '',
     '          this.selectedAnswers[questionIndex] = optionIndex;',
+    '          this.submissionError = "";',
     '        },',
-    '        revealAnswers() {',
-    '          this.revealed = true;',
-    '        },',
-    '        resetQuiz() {',
-    '          if (this.model.kind !== "success") {',
-    '            return;',
+    '        goToPreviousQuestion() {',
+    '          if (this.canGoPrevious) {',
+    '            this.currentQuestionIndex -= 1;',
     '          }',
-    '',
-    '          this.selectedAnswers = this.model.questions.map(() => null);',
-    '          this.revealed = false;',
+    '        },',
+    '        goToNextQuestion() {',
+    '          if (this.canGoNext) {',
+    '            this.currentQuestionIndex += 1;',
+    '          }',
     '        },',
     '        answerLabel(index) {',
     '          return index === null || index === undefined ? "Not answered" : this.labels[index];',
     '        },',
-    '        correctIndex(correctAnswer) {',
-    '          return this.labels.indexOf(correctAnswer);',
-    '        },',
-    '        optionClass(questionIndex, optionIndex, correctAnswer) {',
-    '          const selected = this.selectedAnswers[questionIndex] === optionIndex;',
-    '          const correct = this.correctIndex(correctAnswer) === optionIndex;',
+    '        optionClass(questionIndex, optionIndex) {',
+    '          if (this.submittedAttempt === null) {',
+    '            return { selected: this.selectedAnswers[questionIndex] === optionIndex };',
+    '          }',
+    '',
+    '          const questionResult = this.submittedAttempt.questions[questionIndex];',
     '          return {',
-    '            selected,',
-    '            correct: this.revealed && correct,',
-    '            wrong: this.revealed && selected && !correct,',
+    '            selected: questionResult.selectedAnswer === optionIndex,',
+    '            correct: questionResult.correctAnswer === optionIndex,',
+    '            wrong: questionResult.selectedAnswer === optionIndex && questionResult.correctAnswer !== optionIndex,',
     '          };',
+    '        },',
+    '        async submitAnswers() {',
+    '          if (!this.canSubmit || this.model.kind !== "success") {',
+    '            return;',
+    '          }',
+    '',
+    '          this.submitting = true;',
+    '          this.submissionError = "";',
+    '',
+    '          try {',
+    '            const response = await fetch(this.model.attemptEndpoint, {',
+    '              method: "POST",',
+    '              headers: { "content-type": "application/json" },',
+    '              body: JSON.stringify({ answers: this.selectedAnswers }),',
+    '            });',
+    '',
+    '            const payload = await response.json();',
+    '',
+    '            if (!response.ok || payload.ok !== true) {',
+    '              throw new Error(payload?.error?.message ?? "Unable to submit answers.");',
+    '            }',
+    '',
+    '            this.submittedAttempt = payload.value;',
+    '          } catch (error) {',
+    '            this.submissionError = error instanceof Error ? error.message : "Unable to submit answers.";',
+    '          } finally {',
+    '            this.submitting = false;',
+    '          }',
     '        },',
     '      },',
     '      template: document.getElementById("quiz-template").innerHTML,',

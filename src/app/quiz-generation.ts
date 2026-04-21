@@ -23,7 +23,7 @@ type ConfiguredProviderResult =
   | { ok: true; provider: McqProvider }
   | { ok: false; error: AppError };
 
-const DEFAULT_LM_STUDIO_ENDPOINT = 'http://127.0.0.1:1234/v1/mcq';
+const DEFAULT_LM_STUDIO_ENDPOINT = 'http://127.0.0.1:7321/api/v1/chat';
 
 function success(value: QuizGenerationSuccess): QuizGenerationResult {
   return { ok: true, value };
@@ -46,6 +46,7 @@ function buildProviderFactoryOptions(): ProviderFactoryOptions {
       endpoint:
         processLike.process?.env?.MCQ_ANYTHING_LM_STUDIO_ENDPOINT ??
         DEFAULT_LM_STUDIO_ENDPOINT,
+      model: processLike.process?.env?.MCQ_ANYTHING_LM_STUDIO_MODEL,
     },
   };
 }

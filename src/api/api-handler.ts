@@ -1,7 +1,9 @@
-import { generateAndStoreQuiz, getQuizSession, listPastQuizzes } from '../app/quiz-lifecycle';
+import { generateAndStoreQuiz, getQuizSession, listPastQuizzes, submitQuizAttempt } from '../app/quiz-lifecycle';
 import type { QuizPersistencePort } from '../app/quiz-store';
-import type { AppError, QuizGenerationInput, QuizGenerationResult } from '../app/quiz-types';
+import type { AppError, QuizGenerationInput } from '../app/quiz-types';
 import { renderHomePageHtml } from '../ui/home-page';
+import { renderQuizPageHtml } from '../ui/quiz-page-html';
+import { toQuizPageViewModel } from '../ui/quiz-page-render';
 
 type ApiHandler = (request: Request) => Promise<Response>;
 type HeaderRecord = Record<string, string>;
@@ -78,6 +80,37 @@ function parseJsonBody(body: string): QuizGenerationInput | null {
   } catch {
     return null;
   }
+}
+
+function parseAttemptBody(body: string): { answers: number[] } | null {
+  try {
+    const parsed = JSON.parse(body) as unknown;
+
+    if (typeof parsed !== 'object' || parsed === null) {
+      return null;
+    }
+
+    const candidate = parsed as Record<string, unknown>;
+
+    if (!Array.isArray(candidate.answers) || !candidate.answers.every((answer) => typeof answer === 'number')) {
+      return null;
+    }
+
+    return {
+      answers: [...candidate.answers],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function extractNestedQuizId(path: string, suffix: '/play' | '/attempts'): string | null {
+  if (!path.startsWith('/quizzes/') || !path.endsWith(suffix)) {
+    return null;
+  }
+
+  const id = path.slice('/quizzes/'.length, -suffix.length).trim();
+  return id.length > 0 ? id : null;
 }
 
 function appErrorToHttpStatus(error: AppError): number {
@@ -186,6 +219,43 @@ export function createApiHandler(dependencies: ApiHandlerDependencies = {}): Api
       return jsonResponse(result, allowedOrigin, { status: 201 });
     }
 
+    if (request.method === 'POST') {
+      const id = extractNestedQuizId(path, '/attempts');
+
+      if (id !== null) {
+        if (!store) {
+          return renderServerError('Storage is not configured.', allowedOrigin);
+        }
+
+        const parsedBody = parseAttemptBody(await request.text());
+
+        if (!parsedBody) {
+          return renderAppError({
+            code: 'INVALID_INPUT',
+            message: 'Request body must include an answers array.',
+          }, allowedOrigin);
+        }
+
+        const sessionResult = await getQuizSession(id, store);
+
+        if (!sessionResult.ok) {
+          return renderAppError(sessionResult.error, allowedOrigin);
+        }
+
+        if (sessionResult.value === null) {
+          return renderNotFound(`Quiz not found: ${id}`, allowedOrigin);
+        }
+
+        const attemptResult = await submitQuizAttempt(sessionResult.value, parsedBody.answers, store);
+
+        if (!attemptResult.ok) {
+          return renderAppError(attemptResult.error, allowedOrigin);
+        }
+
+        return jsonResponse(attemptResult, allowedOrigin, { status: 201 });
+      }
+    }
+
     if (request.method === 'GET' && path === '/quizzes') {
       if (!store) {
         return renderServerError('Storage is not configured.', allowedOrigin);
@@ -198,6 +268,28 @@ export function createApiHandler(dependencies: ApiHandlerDependencies = {}): Api
       }
 
       return jsonResponse(result, allowedOrigin, { status: 200 });
+    }
+
+    if (request.method === 'GET') {
+      const id = extractNestedQuizId(path, '/play');
+
+      if (id !== null) {
+        if (!store) {
+          return renderServerError('Storage is not configured.', allowedOrigin);
+        }
+
+        const result = await getQuizSession(id, store);
+
+        if (!result.ok) {
+          return renderAppError(result.error, allowedOrigin);
+        }
+
+        if (result.value === null) {
+          return renderNotFound(`Quiz not found: ${id}`, allowedOrigin);
+        }
+
+        return htmlResponse(renderQuizPageHtml(toQuizPageViewModel(result.value)));
+      }
     }
 
     if (request.method === 'GET' && path.startsWith('/quizzes/')) {

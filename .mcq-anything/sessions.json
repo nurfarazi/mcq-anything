@@ -1,20 +1,97 @@
-[
-  {
-    "id": "4f70e1c5-429c-4923-a857-a69a8c1d58c8",
-    "topic": "Arithmetic",
-    "questions": [
-      {
-        "question": "In basic arithmetic, what is 2 + 2?",
-        "options": [
-          "1",
-          "2",
-          "4",
-          "5"
-        ],
-        "correctAnswer": 2,
-        "explanation": "Adding two and two gives four, which is the correct result for this arithmetic question."
-      }
-    ],
-    "createdAt": "2026-04-21T17:42:04.861Z"
-  }
-]
+{
+  "sessions": [
+    {
+      "id": "56ef9923-b5e7-4507-89a4-bdd58bfadd90",
+      "topic": "Astronomy",
+      "questions": [
+        {
+          "question": "Which planet is known as the Red Planet?",
+          "options": [
+            "Mercury",
+            "Venus",
+            "Earth",
+            "Mars"
+          ],
+          "correctAnswer": 3,
+          "explanation": "Mars is called the Red Planet because of iron oxide on its surface."
+        },
+        {
+          "question": "What is the name of our galaxy?",
+          "options": [
+            "Andromeda",
+            "Whirlpool",
+            "Milky Way",
+            "Sombrero"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Earth is part of the Milky Way galaxy."
+        }
+      ],
+      "createdAt": "2026-04-21T19:23:07.201Z"
+    },
+    {
+      "id": "4f70e1c5-429c-4923-a857-a69a8c1d58c8",
+      "topic": "Arithmetic",
+      "questions": [
+        {
+          "question": "In basic arithmetic, what is 2 + 2?",
+          "options": [
+            "1",
+            "2",
+            "4",
+            "5"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Adding two and two gives four, which is the correct result for this arithmetic question."
+        }
+      ],
+      "createdAt": "2026-04-21T17:42:04.861Z"
+    }
+  ],
+  "attempts": [
+    {
+      "id": "fc5f6c60-10bb-4b23-96c7-647320c0a047",
+      "sessionId": "56ef9923-b5e7-4507-89a4-bdd58bfadd90",
+      "answers": [
+        3,
+        2
+      ],
+      "submittedAt": "2026-04-21T19:23:48.373Z",
+      "score": {
+        "correctCount": 2,
+        "totalQuestions": 2,
+        "percentage": 100
+      },
+      "questions": [
+        {
+          "questionIndex": 0,
+          "question": "Which planet is known as the Red Planet?",
+          "options": [
+            "Mercury",
+            "Venus",
+            "Earth",
+            "Mars"
+          ],
+          "selectedAnswer": 3,
+          "correctAnswer": 3,
+          "isCorrect": true,
+          "explanation": "Mars is called the Red Planet because of iron oxide on its surface."
+        },
+        {
+          "questionIndex": 1,
+          "question": "What is the name of our galaxy?",
+          "options": [
+            "Andromeda",
+            "Whirlpool",
+            "Milky Way",
+            "Sombrero"
+          ],
+          "selectedAnswer": 2,
+          "correctAnswer": 2,
+          "isCorrect": true,
+          "explanation": "Earth is part of the Milky Way galaxy."
+        }
+      ]
+    }
+  ]
+}

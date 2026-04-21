@@ -1,4 +1,5 @@
 import { createApiHandler } from '../../src/api/api-handler';
+import type { QuizAttempt } from '../../src/app/quiz-attempt';
 import type { QuizPersistencePort } from '../../src/app/quiz-store';
 import type { QuizSession } from '../../src/app/quiz-session';
 import { renderHomePageHtml } from '../../src/ui/home-page';
@@ -28,6 +29,7 @@ async function main(): Promise<void> {
   assertEqual(await rootResponse.text(), renderHomePageHtml(), 'returns the landing page HTML at the root path');
 
   const storedSessions: QuizSession[] = [];
+  const storedAttempts: QuizAttempt[] = [];
   const store: QuizPersistencePort = {
     async saveSession(session) {
       storedSessions.push(session);
@@ -37,6 +39,12 @@ async function main(): Promise<void> {
     },
     async getSessionById(id) {
       return storedSessions.find((session) => session.id === id) ?? null;
+    },
+    async saveAttempt(attempt) {
+      storedAttempts.push(attempt);
+    },
+    async listAttemptsBySessionId(sessionId) {
+      return storedAttempts.filter((attempt) => attempt.sessionId === sessionId);
     },
   };
 
@@ -72,7 +80,7 @@ async function main(): Promise<void> {
     globalThis.fetch = (async (input: FetchInput) => {
       const url = String(input);
 
-      if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+      if (!url.includes('7321/api/v1/chat')) {
         throw new Error(`unexpected endpoint: ${url}`);
       }
 
@@ -81,14 +89,16 @@ async function main(): Promise<void> {
         status: 200,
         async json() {
           return {
-            questions: [
-              {
-                question_text: 'What is the SI unit of force?',
-                options: ['Newton', 'Joule', 'Watt', 'Pascal'] as const,
-                correct_answer: 0,
-                explanation_text: 'A newton is the SI unit used to measure force in physics.',
-              },
-            ],
+            output: JSON.stringify({
+              questions: [
+                {
+                  question_text: 'What is the SI unit of force?',
+                  options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+                  correct_answer: 0,
+                  explanation_text: 'A newton is the SI unit used to measure force in physics.',
+                },
+              ],
+            }),
           };
         },
       } as Response;
@@ -107,23 +117,7 @@ async function main(): Promise<void> {
     );
 
     assertEqual(quizResponse.status, 201, 'creates a quiz resource through the API');
-    assertEqual(
-      await quizResponse.json(),
-      {
-        ok: true,
-        value: {
-          questions: [
-            {
-              question: 'What is the SI unit of force?',
-              options: ['Newton', 'Joule', 'Watt', 'Pascal'],
-              correctAnswer: 0,
-              explanation: 'A newton is the SI unit used to measure force in physics.',
-            },
-          ],
-        },
-      },
-      'returns the generated quiz payload',
-    );
+    assertEqual(await quizResponse.json(), { ok: true, value: storedSessions[0] }, 'returns the stored quiz session payload');
 
     assertEqual(storedSessions.length, 1, 'persists the generated quiz session');
 
@@ -157,6 +151,60 @@ async function main(): Promise<void> {
       'returns the stored session payload',
     );
 
+    const playResponse = await handler(new Request(`http://localhost/quizzes/${storedSession.id}/play`));
+    const playHtml = await playResponse.text();
+
+    assertEqual(playResponse.status, 200, 'renders a browser play page for a stored quiz session');
+    assertEqual(playResponse.headers.get('content-type'), 'text/html; charset=utf-8', 'returns an HTML content type for the play route');
+    assertEqual(playHtml.includes('Question 1 of 1'), true, 'renders question progress in the browser play page');
+    assertEqual(playHtml.includes('Submit answers'), true, 'renders the quiz submission control in the browser play page');
+    assertEqual(playHtml.includes('What is the SI unit of force?'), true, 'renders the stored quiz question in the browser play page');
+
+    const submitAttemptResponse = await handler(
+      new Request(`http://localhost/quizzes/${storedSession.id}/attempts`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ answers: [0] }),
+      }),
+    );
+
+    assertEqual(submitAttemptResponse.status, 201, 'submits a scored attempt through the API');
+    assertEqual(
+      await submitAttemptResponse.json(),
+      {
+        ok: true,
+        value: storedAttempts[0],
+      },
+      'returns the stored scored attempt payload',
+    );
+
+    assertEqual(storedAttempts.length, 1, 'persists the submitted attempt');
+
+    const invalidAttemptResponse = await handler(
+      new Request(`http://localhost/quizzes/${storedSession.id}/attempts`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ answers: [] }),
+      }),
+    );
+
+    assertEqual(invalidAttemptResponse.status, 400, 'rejects invalid attempt payloads');
+    assertEqual(
+      await invalidAttemptResponse.json(),
+      {
+        ok: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'All questions must be answered before submitting the quiz.',
+        },
+      },
+      'returns a safe invalid-attempt payload',
+    );
+
     const missingResponse = await handler(new Request('http://localhost/quizzes/missing'));
 
     assertEqual(missingResponse.status, 404, 'returns a not-found status for missing quizzes');
@@ -171,6 +219,22 @@ async function main(): Promise<void> {
       },
       'returns a safe not-found payload',
     );
+
+    const missingPlayResponse = await handler(new Request('http://localhost/quizzes/missing/play'));
+
+    assertEqual(missingPlayResponse.status, 404, 'returns a not-found status for a missing play page');
+
+    const missingAttemptResponse = await handler(
+      new Request('http://localhost/quizzes/missing/attempts', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ answers: [0] }),
+      }),
+    );
+
+    assertEqual(missingAttemptResponse.status, 404, 'returns a not-found status for missing attempt submissions');
   } finally {
     globalThis.fetch = originalFetch;
 

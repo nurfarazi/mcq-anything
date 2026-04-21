@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   globalLike.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -44,14 +44,16 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'What is the SI unit of force?',
-              options: ['Newton', 'Joule', 'Watt', 'Pascal'] as const,
-              correct_answer: 0,
-              explanation_text: 'A newton is the SI unit used to measure force in physics.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'What is the SI unit of force?',
+                options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+                correct_answer: 0,
+                explanation_text: 'A newton is the SI unit used to measure force in physics.',
+              },
+            ],
+          }),
         };
       },
     } as Response;
