@@ -2,8 +2,10 @@ import {
   generateAndStoreQuiz,
   getQuizSession,
   listPastQuizzes,
+  submitQuizAttempt,
   type QuizLifecycleResult,
 } from '../../src/app/quiz-lifecycle';
+import type { QuizAttempt } from '../../src/app/quiz-attempt';
 import type { QuizPersistencePort } from '../../src/app/quiz-store';
 import type { QuizSession } from '../../src/app/quiz-session';
 
@@ -20,7 +22,7 @@ type Expect<T extends true> = T;
 type GenerateShape = Expect<
   Equal<
     Awaited<ReturnType<typeof generateAndStoreQuiz>>,
-    import('../../src/app/quiz-types').QuizGenerationResult
+    QuizLifecycleResult<QuizSession>
   >
 >;
 
@@ -35,6 +37,13 @@ type GetShape = Expect<
   Equal<
     Awaited<ReturnType<typeof getQuizSession>>,
     QuizLifecycleResult<QuizSession | null>
+  >
+>;
+
+type SubmitShape = Expect<
+  Equal<
+    Awaited<ReturnType<typeof submitQuizAttempt>>,
+    QuizLifecycleResult<QuizAttempt>
   >
 >;
 
@@ -70,6 +79,7 @@ async function main(): Promise<void> {
   const originalProviderEnv = globalThis.process?.env?.MCQ_ANYTHING_PROVIDER;
 
   const storeSessions: QuizSession[] = [];
+  const storeAttempts: QuizAttempt[] = [];
   const store: QuizPersistencePort = {
     async saveSession(session) {
       storeSessions.push(session);
@@ -79,6 +89,12 @@ async function main(): Promise<void> {
     },
     async getSessionById(id) {
       return storeSessions.find((session) => session.id === id) ?? null;
+    },
+    async saveAttempt(attempt) {
+      storeAttempts.push(attempt);
+    },
+    async listAttemptsBySessionId(sessionId) {
+      return storeAttempts.filter((attempt) => attempt.sessionId === sessionId);
     },
   };
 
@@ -111,22 +127,24 @@ async function main(): Promise<void> {
 
   const success = await generateAndStoreQuiz({ topic: 'Physics', questionCount: 1 }, store);
 
+  if (!success.ok) {
+    throw new Error('stores a generated quiz session when generation succeeds: expected success result');
+  }
+
+  assertTrue(success.value.id.length > 0, 'returns the stored session id after quiz generation');
+  assertTrue(success.value.createdAt.length > 0, 'returns the stored session timestamp after quiz generation');
+  assertTrue(success.value.topic === 'Physics', 'returns the stored session topic after quiz generation');
   assertDeepEqual(
-    success,
-    {
-      ok: true,
-      value: {
-        questions: [
-          {
-            question: 'What is the SI unit of force?',
-            options: ['Newton', 'Joule', 'Watt', 'Pascal'],
-            correctAnswer: 0,
-            explanation: 'A newton is the SI unit used to measure force in physics.',
-          },
-        ],
+    success.value.questions,
+    [
+      {
+        question: 'What is the SI unit of force?',
+        options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+        correctAnswer: 0,
+        explanation: 'A newton is the SI unit used to measure force in physics.',
       },
-    },
-    'stores a generated quiz session when generation succeeds',
+    ],
+    'returns the stored session questions after quiz generation',
   );
 
   assertTrue(storeSessions.length === 1, 'persists exactly one quiz session after success');
@@ -179,6 +197,66 @@ async function main(): Promise<void> {
 
   assertTrue(storeSessions.length === 1, 'does not add a session when generation fails');
 
+  const submittedAttempt = await submitQuizAttempt(storeSessions[0]!, [0], store);
+
+  if (!submittedAttempt.ok) {
+    throw new Error('stores a scored quiz attempt when answers are valid: expected success result');
+  }
+
+  assertDeepEqual(
+    submittedAttempt.value.answers,
+    [0],
+    'stores the submitted answer indexes on the attempt record',
+  );
+
+  assertDeepEqual(
+    submittedAttempt.value.score,
+    {
+      correctCount: 1,
+      totalQuestions: 1,
+      percentage: 100,
+    },
+    'calculates the quiz score from submitted answers',
+  );
+
+  assertDeepEqual(
+    submittedAttempt.value.questions,
+    [
+      {
+        questionIndex: 0,
+        question: 'What is the SI unit of force?',
+        options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+        selectedAnswer: 0,
+        correctAnswer: 0,
+        isCorrect: true,
+        explanation: 'A newton is the SI unit used to measure force in physics.',
+      },
+    ],
+    'returns per-question feedback for a stored attempt',
+  );
+
+  assertTrue(storeAttempts.length === 1, 'persists exactly one quiz attempt after a valid submission');
+
+  const invalidLengthAttempt = await submitQuizAttempt(storeSessions[0]!, [], store);
+
+  assertFailure(
+    invalidLengthAttempt,
+    'INVALID_INPUT',
+    'rejects quiz submissions that do not answer every question',
+  );
+
+  assertTrue(storeAttempts.length === 1, 'does not persist an attempt when the answer count is invalid');
+
+  const invalidOptionAttempt = await submitQuizAttempt(storeSessions[0]!, [4], store);
+
+  assertFailure(
+    invalidOptionAttempt,
+    'INVALID_INPUT',
+    'rejects quiz submissions that use an out-of-range answer index',
+  );
+
+  assertTrue(storeAttempts.length === 1, 'does not persist an attempt when an answer index is invalid');
+
   const listed = await listPastQuizzes(store);
 
   assertDeepEqual(
@@ -203,6 +281,12 @@ async function main(): Promise<void> {
       throw new Error('disk full');
     },
     async getSessionById() {
+      throw new Error('disk full');
+    },
+    async saveAttempt() {
+      throw new Error('disk full');
+    },
+    async listAttemptsBySessionId() {
       throw new Error('disk full');
     },
   };
@@ -259,6 +343,18 @@ async function main(): Promise<void> {
     'GENERATION_FAILED',
     'maps get failures into an app-safe lifecycle failure',
   );
+
+  const attemptStorageFailure = await submitQuizAttempt(storeSessions[0]!, [0], failingStore);
+
+  assertFailure(
+    attemptStorageFailure,
+    'GENERATION_FAILED',
+    'maps attempt storage failures into an app-safe lifecycle failure',
+  );
+
+  if (attemptStorageFailure.ok === false && attemptStorageFailure.error.message.includes('disk full')) {
+    throw new Error('attempt storage failure should not leak raw persistence errors');
+  }
 
   globalThis.fetch = originalFetch;
 

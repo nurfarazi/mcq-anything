@@ -34,6 +34,8 @@ npm run dev
 
 The API listens on `http://localhost:3000` by default and stores sessions locally in `.mcq-anything/sessions.json`.
 
+Open `http://localhost:3000/` in a browser to see the landing page with the main API endpoints and quick-start hints.
+
 ## Configuration
 
 The app reads a small set of environment variables:
@@ -56,6 +58,7 @@ If you want the default local setup, leave `MCQ_ANYTHING_PROVIDER` unset and sta
 The backend exposes a small JSON API:
 
 - `GET /health` — health check
+- `GET /` — browser-friendly landing page
 - `POST /quizzes` — generate and store a quiz
 - `GET /quizzes` — list stored quiz sessions
 - `GET /quizzes/:id` — fetch one stored quiz session

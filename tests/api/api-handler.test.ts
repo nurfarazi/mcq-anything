@@ -1,6 +1,7 @@
 import { createApiHandler } from '../../src/api/api-handler';
 import type { QuizPersistencePort } from '../../src/app/quiz-store';
 import type { QuizSession } from '../../src/app/quiz-session';
+import { renderHomePageHtml } from '../../src/ui/home-page';
 
 type FetchInput = Parameters<typeof fetch>[0];
 
@@ -23,7 +24,8 @@ async function main(): Promise<void> {
   const rootResponse = await healthHandler(new Request('http://localhost/'));
 
   assertEqual(rootResponse.status, 200, 'returns a successful status for the root path');
-  assertEqual(await rootResponse.json(), { status: 'ok' }, 'returns the same health payload at the root path');
+  assertEqual(rootResponse.headers.get('content-type'), 'text/html; charset=utf-8', 'returns a browser-friendly content type at the root path');
+  assertEqual(await rootResponse.text(), renderHomePageHtml(), 'returns the landing page HTML at the root path');
 
   const storedSessions: QuizSession[] = [];
   const store: QuizPersistencePort = {

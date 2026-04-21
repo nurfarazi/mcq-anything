@@ -1,6 +1,7 @@
 import { generateAndStoreQuiz, getQuizSession, listPastQuizzes } from '../app/quiz-lifecycle';
 import type { QuizPersistencePort } from '../app/quiz-store';
 import type { AppError, QuizGenerationInput, QuizGenerationResult } from '../app/quiz-types';
+import { renderHomePageHtml } from '../ui/home-page';
 
 type ApiHandler = (request: Request) => Promise<Response>;
 type HeaderRecord = Record<string, string>;
@@ -129,6 +130,15 @@ function renderServerError(message: string, allowedOrigin?: string): Response {
   );
 }
 
+function htmlResponse(body: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+    },
+  });
+}
+
 export function createApiHandler(dependencies: ApiHandlerDependencies = {}): ApiHandler {
   const healthMessage = dependencies.healthMessage ?? 'ok';
   const store = dependencies.store;
@@ -145,7 +155,11 @@ export function createApiHandler(dependencies: ApiHandlerDependencies = {}): Api
     const url = new URL(request.url);
     const path = normalizePath(url);
 
-    if (request.method === 'GET' && (path === '/health' || path === '/')) {
+    if (request.method === 'GET' && path === '/') {
+      return htmlResponse(renderHomePageHtml());
+    }
+
+    if (request.method === 'GET' && path === '/health') {
       return jsonResponse({ status: healthMessage }, allowedOrigin, { status: 200 });
     }
 

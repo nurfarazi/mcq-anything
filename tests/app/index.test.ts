@@ -1,4 +1,4 @@
-import { generateQuiz } from '../../src/app';
+import { generateQuiz, submitQuizAttempt } from '../../src/app';
 
 type FetchInput = Parameters<typeof fetch>[0];
 
@@ -12,6 +12,7 @@ type Expect<T extends true> = T;
 
 type ExportShape = Expect<Equal<typeof generateQuiz, typeof import('../../src/app/quiz-generation').generateQuiz>>;
 type InputShape = Expect<Equal<Parameters<typeof generateQuiz>[0], import('../../src/app/quiz-types').QuizGenerationInput>>;
+type SubmitShape = Expect<Equal<typeof submitQuizAttempt, typeof import('../../src/app/quiz-lifecycle').submitQuizAttempt>>;
 
 function assertDeepEqual(actual: unknown, expected: unknown, label: string): void {
   const actualJson = JSON.stringify(actual);

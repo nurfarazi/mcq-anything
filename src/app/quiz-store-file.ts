@@ -1,7 +1,13 @@
 import { dirname } from 'node:path';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import type { QuizAttempt } from './quiz-attempt';
 import type { QuizPersistencePort } from './quiz-store';
 import type { QuizSession } from './quiz-session';
+
+interface StoredQuizData {
+  sessions: QuizSession[];
+  attempts: QuizAttempt[];
+}
 
 function safeStorageError(message: string): Error {
   return new Error(message);
@@ -31,12 +37,49 @@ function isQuizSessionArray(value: unknown): value is QuizSession[] {
   return Array.isArray(value) && value.every(isQuizSession);
 }
 
-async function readSessionsFromFile(filePath: string): Promise<QuizSession[]> {
+function isQuizAttempt(value: unknown): value is QuizAttempt {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    value.id.trim().length > 0 &&
+    typeof value.sessionId === 'string' &&
+    value.sessionId.trim().length > 0 &&
+    typeof value.submittedAt === 'string' &&
+    value.submittedAt.trim().length > 0 &&
+    isRecord(value.score) &&
+    typeof value.score.correctCount === 'number' &&
+    typeof value.score.totalQuestions === 'number' &&
+    typeof value.score.percentage === 'number' &&
+    Array.isArray(value.answers) &&
+    value.answers.every((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 3) &&
+    Array.isArray(value.questions)
+  );
+}
+
+function isQuizAttemptArray(value: unknown): value is QuizAttempt[] {
+  return Array.isArray(value) && value.every(isQuizAttempt);
+}
+
+function isStoredQuizData(value: unknown): value is StoredQuizData {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isQuizSessionArray(value.sessions) && isQuizAttemptArray(value.attempts);
+}
+
+async function readQuizDataFromFile(filePath: string): Promise<StoredQuizData> {
   try {
     const raw = await readFile(filePath, 'utf8');
 
     if (raw.trim().length === 0) {
-      return [];
+      return {
+        sessions: [],
+        attempts: [],
+      };
     }
 
     const parsed = JSON.parse(raw) as unknown;
@@ -45,14 +88,24 @@ async function readSessionsFromFile(filePath: string): Promise<QuizSession[]> {
       throw safeStorageError('Unable to read quiz sessions from storage.');
     }
 
-    if (!isQuizSessionArray(parsed)) {
+    if (isQuizSessionArray(parsed)) {
+      return {
+        sessions: parsed,
+        attempts: [],
+      };
+    }
+
+    if (!isStoredQuizData(parsed)) {
       throw safeStorageError('Unable to read quiz sessions from storage.');
     }
 
     return parsed;
   } catch (error) {
     if (isMissingFileError(error)) {
-      return [];
+      return {
+        sessions: [],
+        attempts: [],
+      };
     }
 
     if (error instanceof SyntaxError) {
@@ -81,7 +134,7 @@ function isMissingFileError(error: unknown): boolean {
   return code === 'ENOENT';
 }
 
-async function writeSessionsToFile(filePath: string, sessions: readonly QuizSession[]): Promise<void> {
+async function writeQuizDataToFile(filePath: string, data: StoredQuizData): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
 
   const processLike = globalThis as {
@@ -89,7 +142,7 @@ async function writeSessionsToFile(filePath: string, sessions: readonly QuizSess
   };
 
   const tempPath = `${filePath}.tmp-${processLike.process?.pid ?? 'pid'}-${Date.now()}`;
-  const serialized = JSON.stringify(sessions, null, 2);
+  const serialized = JSON.stringify(data, null, 2);
 
   await writeFile(tempPath, serialized, 'utf8');
 
@@ -115,19 +168,37 @@ export class FileQuizPersistenceAdapter implements QuizPersistencePort {
   constructor(private readonly filePath: string) {}
 
   async saveSession(session: QuizSession): Promise<void> {
-    const sessions = await readSessionsFromFile(this.filePath);
-    const nextSessions = [session, ...sessions.filter((existing) => existing.id !== session.id)];
+    const data = await readQuizDataFromFile(this.filePath);
+    const nextSessions = [session, ...data.sessions.filter((existing) => existing.id !== session.id)];
 
-    await writeSessionsToFile(this.filePath, nextSessions);
+    await writeQuizDataToFile(this.filePath, {
+      sessions: nextSessions,
+      attempts: data.attempts,
+    });
   }
 
   async listSessions(): Promise<readonly QuizSession[]> {
-    const sessions = await readSessionsFromFile(this.filePath);
-    return sessions;
+    const data = await readQuizDataFromFile(this.filePath);
+    return data.sessions;
   }
 
   async getSessionById(id: string): Promise<QuizSession | null> {
-    const sessions = await readSessionsFromFile(this.filePath);
-    return sessions.find((session) => session.id === id) ?? null;
+    const data = await readQuizDataFromFile(this.filePath);
+    return data.sessions.find((session) => session.id === id) ?? null;
+  }
+
+  async saveAttempt(attempt: QuizAttempt): Promise<void> {
+    const data = await readQuizDataFromFile(this.filePath);
+    const nextAttempts = [attempt, ...data.attempts.filter((existing) => existing.id !== attempt.id)];
+
+    await writeQuizDataToFile(this.filePath, {
+      sessions: data.sessions,
+      attempts: nextAttempts,
+    });
+  }
+
+  async listAttemptsBySessionId(sessionId: string): Promise<readonly QuizAttempt[]> {
+    const data = await readQuizDataFromFile(this.filePath);
+    return data.attempts.filter((attempt) => attempt.sessionId === sessionId);
   }
 }

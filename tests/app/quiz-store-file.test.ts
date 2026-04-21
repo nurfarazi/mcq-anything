@@ -1,6 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createQuizAttempt } from '../../src/app/quiz-attempt';
+import { scoreQuizAnswers } from '../../src/app/quiz-scoring';
 import { FileQuizPersistenceAdapter } from '../../src/app/quiz-store-file';
 import { createQuizSession } from '../../src/app/quiz-session';
 
@@ -66,8 +68,11 @@ async function main(): Promise<void> {
 
   assertDeepEqual(
     JSON.parse(await readFile(filePath, 'utf8')),
-    [firstSession],
-    'saveSession persists the first quiz session as a JSON array',
+    {
+      sessions: [firstSession],
+      attempts: [],
+    },
+    'saveSession persists the first quiz session in the structured storage envelope',
   );
 
   const secondSession = createQuizSession('Physics', [
@@ -94,6 +99,42 @@ async function main(): Promise<void> {
     await store.getSessionById('session-001'),
     firstSession,
     'getSessionById returns the matching stored session',
+  );
+
+  const firstAttempt = createQuizAttempt(
+    'session-001',
+    [2],
+    scoreQuizAnswers(firstSession.questions, [2]),
+    {
+      idFactory: () => 'attempt-001',
+      clock: () => new Date('2026-04-15T10:30:00.000Z'),
+    },
+  );
+
+  await store.saveAttempt(firstAttempt);
+
+  assertDeepEqual(
+    await store.listAttemptsBySessionId('session-001'),
+    [firstAttempt],
+    'saveAttempt persists a scored attempt and lists it by session id',
+  );
+
+  const secondAttempt = createQuizAttempt(
+    'session-001',
+    [1],
+    scoreQuizAnswers(firstSession.questions, [1]),
+    {
+      idFactory: () => 'attempt-002',
+      clock: () => new Date('2026-04-15T10:45:00.000Z'),
+    },
+  );
+
+  await store.saveAttempt(secondAttempt);
+
+  assertDeepEqual(
+    await store.listAttemptsBySessionId('session-001'),
+    [secondAttempt, firstAttempt],
+    'multiple attempts are listed most-recent first for the same session',
   );
 
   const updatedFirstSession = createQuizSession('Geography', [
@@ -131,6 +172,28 @@ async function main(): Promise<void> {
     'missing files still allow safe get-by-id lookups',
   );
 
+  assertDeepEqual(
+    await missingFileStore.listAttemptsBySessionId('missing'),
+    [],
+    'missing files treat saved attempts as an empty collection',
+  );
+
+  const legacyFilePath = join(dirPath, 'legacy.json');
+  await writeFile(legacyFilePath, JSON.stringify([firstSession], null, 2), 'utf8');
+  const legacyStore = new FileQuizPersistenceAdapter(legacyFilePath);
+
+  assertDeepEqual(
+    await legacyStore.listSessions(),
+    [firstSession],
+    'legacy array-only session files are still readable after the storage format upgrade',
+  );
+
+  assertDeepEqual(
+    await legacyStore.listAttemptsBySessionId('session-001'),
+    [],
+    'legacy array-only session files default to zero saved attempts',
+  );
+
   const corruptedFilePath = join(dirPath, 'corrupted.json');
   await writeFile(corruptedFilePath, '{not-json', 'utf8');
   const corruptedStore = new FileQuizPersistenceAdapter(corruptedFilePath);
@@ -145,6 +208,12 @@ async function main(): Promise<void> {
     () => corruptedStore.getSessionById('session-001'),
     'Unable to read quiz sessions from storage.',
     'corrupted files surface an app-safe get failure',
+  );
+
+  await expectRejectsWithMessage(
+    () => corruptedStore.listAttemptsBySessionId('session-001'),
+    'Unable to read quiz sessions from storage.',
+    'corrupted files surface an app-safe attempt-list failure',
   );
 
   await rm(dirPath, { recursive: true, force: true });
