@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   installFetch(async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -77,20 +77,22 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'Which planet is closest to the Sun?',
-              options: ['Mercury', 'Venus', 'Earth', 'Mars'] as const,
-              correct_answer: 0,
-              explanation_text: 'Mercury is the closest planet to the Sun in our solar system.',
-            },
-            {
-              question_text: 'What is the name of our galaxy?',
-              options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'] as const,
-              correct_answer: 1,
-              explanation_text: 'Our solar system is located in the Milky Way galaxy.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'Which planet is closest to the Sun?',
+                options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+                correct_answer: 0,
+                explanation_text: 'Mercury is the closest planet to the Sun in our solar system.',
+              },
+              {
+                question_text: 'What is the name of our galaxy?',
+                options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'],
+                correct_answer: 1,
+                explanation_text: 'Our solar system is located in the Milky Way galaxy.',
+              },
+            ],
+          }),
         };
       },
     } as Response;
@@ -126,7 +128,7 @@ async function main(): Promise<void> {
   installFetch(async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -135,14 +137,16 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'Only one question',
-              options: ['A', 'B', 'C', 'D'] as const,
-              correct_answer: 0,
-              explanation_text: 'Example explanation with enough detail to be valid.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'Only one question',
+                options: ['A', 'B', 'C', 'D'],
+                correct_answer: 0,
+                explanation_text: 'Example explanation with enough detail to be valid.',
+              },
+            ],
+          }),
         };
       },
     } as Response;
@@ -159,7 +163,7 @@ async function main(): Promise<void> {
     installFetch(async (input: FetchInput) => {
         const url = String(input);
 
-        if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+        if (!url.includes('7321/api/v1/chat')) {
             throw new Error(`unexpected endpoint: ${url}`);
         }
 
@@ -168,14 +172,16 @@ async function main(): Promise<void> {
             status: 200,
             async json() {
                 return {
-                    questions: [
-                        {
-                      question_text: 'What is the capital of France?',
-                      options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
-                      correct_answer: 2,
-                      explanation_text: 'Paris is the capital city of France.',
-                        },
-                    ],
+                    output: JSON.stringify({
+                        questions: [
+                            {
+                                question_text: 'What is the capital of France?',
+                                options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+                                correct_answer: 2,
+                                explanation_text: 'Paris is the capital city of France.',
+                            },
+                        ],
+                    }),
                 };
             },
         } as Response;

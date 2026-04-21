@@ -101,7 +101,7 @@ async function main(): Promise<void> {
   globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -110,14 +110,16 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'What is the SI unit of force?',
-              options: ['Newton', 'Joule', 'Watt', 'Pascal'] as const,
-              correct_answer: 0,
-              explanation_text: 'A newton is the SI unit used to measure force in physics.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'What is the SI unit of force?',
+                options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+                correct_answer: 0,
+                explanation_text: 'A newton is the SI unit used to measure force in physics.',
+              },
+            ],
+          }),
         };
       },
     } as Response;
@@ -165,7 +167,7 @@ async function main(): Promise<void> {
   globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -174,14 +176,16 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'Only one question',
-              options: ['A', 'B', 'C', 'D'] as const,
-              correct_answer: 0,
-              explanation_text: 'A valid explanation with enough detail to pass validation.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'Only one question',
+                options: ['A', 'B', 'C', 'D'],
+                correct_answer: 0,
+                explanation_text: 'A valid explanation with enough detail to pass validation.',
+              },
+            ],
+          }),
         };
       },
     } as Response;
@@ -294,7 +298,7 @@ async function main(): Promise<void> {
   globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
-    if (!url.includes('127.0.0.1:1234/v1/mcq')) {
+    if (!url.includes('7321/api/v1/chat')) {
       throw new Error(`unexpected endpoint: ${url}`);
     }
 
@@ -303,14 +307,16 @@ async function main(): Promise<void> {
       status: 200,
       async json() {
         return {
-          questions: [
-            {
-              question_text: 'What is the SI unit of force?',
-              options: ['Newton', 'Joule', 'Watt', 'Pascal'] as const,
-              correct_answer: 0,
-              explanation_text: 'A newton is the SI unit used to measure force in physics.',
-            },
-          ],
+          output: JSON.stringify({
+            questions: [
+              {
+                question_text: 'What is the SI unit of force?',
+                options: ['Newton', 'Joule', 'Watt', 'Pascal'],
+                correct_answer: 0,
+                explanation_text: 'A newton is the SI unit used to measure force in physics.',
+              },
+            ],
+          }),
         };
       },
     } as Response;

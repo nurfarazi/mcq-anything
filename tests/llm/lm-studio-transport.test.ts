@@ -1,9 +1,8 @@
 import type { MCQGenerationRequest, MCQGenerationResponse } from '../../src/llm/types';
 import {
-  mapMcqGenerationRequestToLmStudioPayload,
   requestMcqGenerationFromLmStudio,
   type LmStudioFetch,
-  type LmStudioRequestPayload,
+  type LmStudioChatRequest,
   type LmStudioResponsePayload,
 } from '../../src/llm/providers/lm-studio';
 
@@ -15,8 +14,8 @@ type Equal<A, B> =
 
 type Expect<T extends true> = T;
 
-type RequestPayloadShape = Expect<
-  Equal<LmStudioRequestPayload, { topic: string; question_count: number }>
+type ChatRequestShape = Expect<
+  Equal<LmStudioChatRequest, { model: string; system_prompt: string; input: string }>
 >;
 
 type ResponsePayloadShape = Expect<
@@ -89,6 +88,23 @@ async function main(): Promise<void> {
     init: Parameters<LmStudioFetch>[1];
   }> = [];
 
+  const quizPayload: LmStudioResponsePayload = {
+    questions: [
+      {
+        question_text: 'What is the closest planet to the Sun?',
+        options: ['Mercury', 'Venus', 'Earth', 'Mars'],
+        correct_answer: 0,
+        explanation_text: 'Mercury is the closest planet to the Sun.',
+      },
+      {
+        question_text: 'What galaxy do we live in?',
+        options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'],
+        correct_answer: 1,
+        explanation_text: 'Earth is in the Milky Way galaxy.',
+      },
+    ],
+  };
+
   const successfulFetch: LmStudioFetch = async (input, init) => {
     observedCalls.push({ input, init });
 
@@ -96,46 +112,55 @@ async function main(): Promise<void> {
       ok: true,
       status: 200,
       async json() {
-        return {
-          questions: [
-            {
-              question_text: 'What is the closest planet to the Sun?',
-              options: ['Mercury', 'Venus', 'Earth', 'Mars'] as const,
-              correct_answer: 0,
-              explanation_text: 'Mercury is the closest planet to the Sun.',
-            },
-            {
-              question_text: 'What galaxy do we live in?',
-              options: ['Andromeda', 'Milky Way', 'Sombrero', 'Whirlpool'] as const,
-              correct_answer: 1,
-              explanation_text: 'Earth is in the Milky Way galaxy.',
-            },
-          ],
-        } satisfies LmStudioResponsePayload;
+        return { output: JSON.stringify(quizPayload) };
       },
     };
   };
 
+  const testEndpoint = 'http://127.0.0.1:7321/api/v1/chat';
+
   const successResult = await requestMcqGenerationFromLmStudio(sharedRequest, {
-    endpoint: 'http://127.0.0.1:1234/v1/mcq',
+    endpoint: testEndpoint,
+    model: 'google/gemma-4-31b',
     fetchImpl: successfulFetch,
   });
 
+  const observedBody = JSON.parse(observedCalls[0]!.init.body) as LmStudioChatRequest;
+
   assertDeepEqual(
-    observedCalls,
-    [
-      {
-        input: 'http://127.0.0.1:1234/v1/mcq',
-        init: {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(mapMcqGenerationRequestToLmStudioPayload(sharedRequest)),
-        },
-      },
-    ],
-    'sends the mapped request payload through a POST call',
+    observedCalls[0]!.input,
+    testEndpoint,
+    'sends the request to the configured endpoint',
+  );
+
+  assertDeepEqual(
+    observedCalls[0]!.init.method,
+    'POST',
+    'uses POST method',
+  );
+
+  assertDeepEqual(
+    observedBody.model,
+    'google/gemma-4-31b',
+    'sends the configured model name',
+  );
+
+  assertDeepEqual(
+    typeof observedBody.system_prompt,
+    'string',
+    'includes a system prompt',
+  );
+
+  assertDeepEqual(
+    observedBody.input.includes('Astronomy'),
+    true,
+    'includes the topic in the input',
+  );
+
+  assertDeepEqual(
+    observedBody.input.includes('2'),
+    true,
+    'includes the question count in the input',
   );
 
   assertDeepEqual(
@@ -162,7 +187,7 @@ async function main(): Promise<void> {
   await assertRejectsWithMessage(
     () =>
       requestMcqGenerationFromLmStudio(sharedRequest, {
-        endpoint: 'http://127.0.0.1:1234/v1/mcq',
+        endpoint: testEndpoint,
         fetchImpl: async () => {
           throw new Error('ECONNRESET: socket hang up');
         },
@@ -174,20 +199,22 @@ async function main(): Promise<void> {
   await assertRejectsWithMessage(
     () =>
       requestMcqGenerationFromLmStudio(sharedRequest, {
-        endpoint: 'http://127.0.0.1:1234/v1/mcq',
+        endpoint: testEndpoint,
         fetchImpl: async () => ({
           ok: true,
           status: 200,
           async json() {
             return {
-              questions: [
-                {
-                  question_text: 'Broken payload',
-                  options: ['A', 'B', 'C'] as const,
-                  correct_answer: 0,
-                  explanation_text: 'This response is malformed.',
-                },
-              ],
+              output: JSON.stringify({
+                questions: [
+                  {
+                    question_text: 'Broken payload',
+                    options: ['A', 'B', 'C'],
+                    correct_answer: 0,
+                    explanation_text: 'This response is malformed.',
+                  },
+                ],
+              }),
             };
           },
         }),

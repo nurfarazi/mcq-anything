@@ -1,5 +1,6 @@
 import type { McqProvider, ProviderFactoryOptions } from '../../src/llm/provider-factory';
 import { createProvider } from '../../src/llm/provider-factory';
+import type { LmStudioChatRequest } from '../../src/llm/providers/lm-studio';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends
@@ -21,52 +22,41 @@ function assertDeepEqual(actual: unknown, expected: unknown, label: string): voi
   }
 }
 
-function assertThrows(fn: () => unknown, messagePart: string, label: string): void {
-  try {
-    fn();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (!message.includes(messagePart)) {
-      throw new Error(`${label}: expected error message to include ${messagePart}, received ${message}`);
-    }
-
-    return;
-  }
-
-  throw new Error(`${label}: expected function to throw`);
-}
-
 async function main(): Promise<void> {
   const observedCalls: Array<{
     input: string;
-    body: string;
+    body: LmStudioChatRequest;
   }> = [];
 
+  const quizPayload = {
+    questions: [
+      {
+        question_text: 'What is 2 + 2?',
+        options: ['1', '2', '3', '4'],
+        correct_answer: 3,
+        explanation_text: '2 + 2 equals 4.',
+      },
+    ],
+  };
+
   const fetchImpl = async (input: string, init: { method: string; headers: Record<string, string>; body: string }) => {
-    observedCalls.push({ input, body: init.body });
+    observedCalls.push({ input, body: JSON.parse(init.body) as LmStudioChatRequest });
 
     return {
       ok: true,
       status: 200,
       async json() {
-        return {
-          questions: [
-            {
-              question_text: 'What is 2 + 2?',
-              options: ['1', '2', '3', '4'] as const,
-              correct_answer: 3,
-              explanation_text: '2 + 2 equals 4.',
-            },
-          ],
-        };
+        return { output: JSON.stringify(quizPayload) };
       },
     };
   };
 
+  const testEndpoint = 'http://127.0.0.1:7321/api/v1/chat';
+
   const options: ProviderFactoryOptions = {
     lmStudio: {
-      endpoint: 'http://127.0.0.1:1234/v1/mcq',
+      endpoint: testEndpoint,
+      model: 'google/gemma-4-31b',
       fetchImpl,
     },
   };
@@ -75,14 +65,15 @@ async function main(): Promise<void> {
   const result = await provider.generate({ topic: 'Math', questionCount: 1 });
 
   assertDeepEqual(
-    observedCalls,
-    [
-      {
-        input: 'http://127.0.0.1:1234/v1/mcq',
-        body: JSON.stringify({ topic: 'Math', question_count: 1 }),
-      },
-    ],
-    'uses the LM Studio adapter to generate the request payload',
+    observedCalls[0]!.input,
+    testEndpoint,
+    'sends the request to the configured LM Studio endpoint',
+  );
+
+  assertDeepEqual(
+    observedCalls[0]!.body.model,
+    'google/gemma-4-31b',
+    'uses the LM Studio adapter with the configured model',
   );
 
   assertDeepEqual(
@@ -99,7 +90,6 @@ async function main(): Promise<void> {
     },
     'returns the normalized response from the LM Studio adapter',
   );
-
 }
 
 void main().catch((error) => {
