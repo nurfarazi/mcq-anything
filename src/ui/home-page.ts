@@ -9,6 +9,7 @@ function buildStyles(): string {
       --border: rgba(47, 36, 26, 0.14);
       --brand: #264653;
       --brand-strong: #1b3b46;
+      --danger: #8c2f39;
       --shadow: 0 24px 70px rgba(39, 24, 13, 0.14);
     }
 
@@ -27,6 +28,8 @@ function buildStyles(): string {
     body { padding: 32px 18px 48px; }
 
     a { color: inherit; }
+
+    button, input { font: inherit; }
 
     .shell {
       width: min(1040px, 100%);
@@ -67,7 +70,7 @@ function buildStyles(): string {
       font-size: clamp(2.2rem, 4vw, 4rem);
       line-height: 0.95;
       letter-spacing: -0.04em;
-      max-width: 12ch;
+      max-width: 11ch;
     }
 
     .subtitle {
@@ -91,15 +94,22 @@ function buildStyles(): string {
       white-space: nowrap;
     }
 
+    .layout {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr);
+      align-items: start;
+    }
+
     .grid {
       display: grid;
       gap: 16px;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      margin-bottom: 24px;
+      margin-top: 24px;
     }
 
     .card {
-      padding: 18px;
+      padding: 20px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.82);
@@ -111,7 +121,9 @@ function buildStyles(): string {
     }
 
     .card p,
-    .card li {
+    .card li,
+    .status,
+    .field-note {
       margin-top: 8px;
       color: var(--muted);
       line-height: 1.6;
@@ -135,10 +147,42 @@ function buildStyles(): string {
       overflow-x: auto;
     }
 
+    .generator {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.96rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .input {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--text);
+    }
+
+    .input:focus-visible,
+    .button:focus-visible {
+      outline: 3px solid rgba(38, 70, 83, 0.28);
+      outline-offset: 2px;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
+      align-items: center;
     }
 
     .button {
@@ -153,6 +197,7 @@ function buildStyles(): string {
       text-decoration: none;
       font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
       transition: transform 140ms ease, border-color 140ms ease;
+      cursor: pointer;
     }
 
     .button.primary {
@@ -166,11 +211,31 @@ function buildStyles(): string {
       border-color: rgba(38, 70, 83, 0.32);
     }
 
+    .button[disabled] {
+      cursor: wait;
+      opacity: 0.78;
+      transform: none;
+    }
+
+    .status[hidden] {
+      display: none;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
     .footer-note {
-      margin-top: 8px;
+      margin-top: 10px;
       color: var(--muted);
       line-height: 1.6;
       font-family: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 720px) {
@@ -202,52 +267,107 @@ export function renderHomePageHtml(): string {
     '        <div>',
     '          <p class="eyebrow">MCQ Anything</p>',
     '          <h1>Generate multiple-choice questions from a topic.</h1>',
-    '          <p class="subtitle">This server is API-first, but the home page gives you a friendly starting point instead of a blank screen. Use the JSON endpoints below to generate quizzes and inspect saved sessions.</p>',
+    '          <p class="subtitle">Type a topic, pick how many questions you want, and jump straight into a browser-based quiz flow with server-side scoring.</p>',
     '        </div>',
     '        <div class="hero-badge">API root · browser landing page</div>',
     '      </header>',
     '',
+    '      <section class="layout">',
+    '        <article class="card">',
+    '          <h2>Start a quiz</h2>',
+    '          <p>Use the form below to generate a stored quiz session and continue to the one-question-at-a-time play page.</p>',
+    '          <form id="generator-form" class="generator" novalidate>',
+    '            <div class="field">',
+    '              <label for="topic-input">Topic</label>',
+    '              <input class="input" id="topic-input" name="topic" type="text" placeholder="Astronomy, biology, world history..." required />',
+    '              <p class="field-note">Choose something specific enough to generate focused questions.</p>',
+    '            </div>',
+    '            <div class="field">',
+    '              <label for="question-count">Question count</label>',
+    '              <input class="input" id="question-count" name="questionCount" type="number" min="1" max="10" value="5" required />',
+    '              <p class="field-note">The current API supports between 1 and 10 questions.</p>',
+    '            </div>',
+    '            <div class="actions">',
+    '              <button class="button primary" id="generate-button" type="submit">Generate quiz</button>',
+    '              <a class="button" href="/quizzes">View stored sessions</a>',
+    '            </div>',
+    '            <p class="status" id="form-status" aria-live="polite" hidden></p>',
+    '          </form>',
+    '        </article>',
+    '',
+    '        <aside class="card">',
+    '          <h2>Useful endpoints</h2>',
+    '          <p>You can still drive everything over JSON if you prefer scripts or Postman over buttons.</p>',
+    '          <span class="endpoint">GET /health</span>',
+    '          <span class="endpoint">POST /quizzes</span>',
+    '          <span class="endpoint">GET /quizzes</span>',
+    '          <p class="footer-note">The browser flow uses the same endpoints, so the UI stays honest.</p>',
+    '        </aside>',
+    '      </section>',
+    '',
     '      <section class="grid" aria-label="Quick start">',
     '        <article class="card">',
     '          <h2>Health check</h2>',
-    '          <p>Use this endpoint to confirm the server is alive.</p>',
+    '          <p>Confirm the local server is alive before blaming the quiz gremlins.</p>',
     '          <span class="endpoint">GET /health</span>',
     '        </article>',
     '        <article class="card">',
-    '          <h2>Create a quiz</h2>',
-    '          <p>Send a topic and question count to generate and store a quiz session.</p>',
-    '          <span class="endpoint">POST /quizzes</span>',
+    '          <h2>Example payload</h2>',
+    '          <p>The browser submits the same JSON you would send manually.</p>',
+    '          <span class="endpoint">{"topic":"Astronomy","questionCount":5}</span>',
     '        </article>',
     '        <article class="card">',
-    '          <h2>List sessions</h2>',
-    '          <p>View stored quiz sessions or fetch a single session by id.</p>',
-    '          <span class="endpoint">GET /quizzes</span>',
-    '        </article>',
-    '      </section>',
-    '',
-    '      <section class="grid">',
-    '        <article class="card">',
-    '          <h2>Try it from the terminal</h2>',
-    '          <p>Example request body:</p>',
-    '          <span class="endpoint">{"topic":"Astronomy","questionCount":2}</span>',
-    '        </article>',
-    '        <article class="card">',
-    '          <h2>What to do next</h2>',
+    '          <h2>What happens next</h2>',
     '          <ul>',
-    '            <li>Start LM Studio on the default local endpoint.</li>',
-    '            <li>Call <code>/quizzes</code> to generate a quiz.</li>',
-    '            <li>Use <code>/health</code> to verify the server.</li>',
+    '            <li>The server generates and stores a quiz session.</li>',
+    '            <li>The browser redirects to a one-question-at-a-time play page.</li>',
+    '            <li>Your submitted answers are scored and saved on the server.</li>',
     '          </ul>',
     '        </article>',
     '      </section>',
-    '',
-    '      <div class="actions">',
-    '        <a class="button primary" href="/health">Check health</a>',
-    '        <a class="button" href="/quizzes">View quizzes</a>',
-    '      </div>',
-    '      <p class="footer-note">If you expected an interactive quiz UI here, the current project exposes that functionality through the API and the reusable HTML renderer in <code>src/ui</code>.</p>',
     '    </section>',
     '  </main>',
+    '  <script>',
+    '    const form = document.getElementById("generator-form");',
+    '    const status = document.getElementById("form-status");',
+    '    const button = document.getElementById("generate-button");',
+    '    const topicInput = document.getElementById("topic-input");',
+    '    const countInput = document.getElementById("question-count");',
+    '',
+    '    function setStatus(message, isError) {',
+    '      status.hidden = message.length === 0;',
+    '      status.textContent = message;',
+    '      status.className = isError ? "status error" : "status";',
+    '    }',
+    '',
+    '    form.addEventListener("submit", async (event) => {',
+    '      event.preventDefault();',
+    '      setStatus("Generating your quiz...", false);',
+    '      button.disabled = true;',
+    '',
+    '      try {',
+    '        const response = await fetch("/quizzes", {',
+    '          method: "POST",',
+    '          headers: { "content-type": "application/json" },',
+    '          body: JSON.stringify({',
+    '            topic: topicInput.value,',
+    '            questionCount: Number(countInput.value),',
+    '          }),',
+    '        });',
+    '',
+    '        const payload = await response.json();',
+    '',
+    '        if (!response.ok || payload.ok !== true) {',
+    '          throw new Error(payload?.error?.message ?? "Unable to generate quiz content.");',
+    '        }',
+    '',
+    '        window.location.href = `/quizzes/${payload.value.id}/play`;',
+    '      } catch (error) {',
+    '        setStatus(error instanceof Error ? error.message : "Unable to generate quiz content.", true);',
+    '        button.disabled = false;',
+    '      }',
+    '    });',
+    '  </script>',
     '</body>',
     '</html>',
   ].join('\n');

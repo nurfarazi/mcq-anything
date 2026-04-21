@@ -89,7 +89,7 @@ export async function submitQuizAttempt(
 ): Promise<QuizLifecycleResult<QuizAttempt>> {
   const normalizedAnswers = normalizeSubmittedAnswers(session.questions.length, answers);
 
-  if (!Array.isArray(normalizedAnswers)) {
+  if ('ok' in normalizedAnswers) {
     return normalizedAnswers;
   }
 

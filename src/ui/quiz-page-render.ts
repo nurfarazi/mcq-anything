@@ -1,8 +1,13 @@
-import type { AppErrorCode, QuizGenerationResult, QuizGenerationSuccess } from '../app/quiz-types';
+import type { QuizSession } from '../app/quiz-session';
+import type { AppErrorCode } from '../app/quiz-types';
 
 export type QuizPageViewModel =
   | {
       kind: 'success';
+      sessionId: string;
+      topic: string;
+      attemptEndpoint: string;
+      initialProgressLabel: string;
       questions: ReadonlyArray<RenderedQuestion>;
     }
   | {
@@ -13,8 +18,6 @@ export type QuizPageViewModel =
 export interface RenderedQuestion {
   question: string;
   options: readonly [string, string, string, string];
-  correctAnswer: 'A' | 'B' | 'C' | 'D';
-  explanation: string;
 }
 
 export interface RenderedError {
@@ -22,69 +25,26 @@ export interface RenderedError {
   message: string;
 }
 
-function toAnswerLabel(index: number): 'A' | 'B' | 'C' | 'D' {
-  return ['A', 'B', 'C', 'D'][index] as 'A' | 'B' | 'C' | 'D';
-}
-
-function renderQuestion(question: RenderedQuestion, index: number): string {
-  const lines = [
-    `${index + 1}. ${question.question}`,
-    `  A. ${question.options[0]}`,
-    `  B. ${question.options[1]}`,
-    `  C. ${question.options[2]}`,
-    `  D. ${question.options[3]}`,
-    `  Correct answer: ${question.correctAnswer}`,
-    `  Explanation: ${question.explanation}`,
-  ];
-
-  return lines.join('\n');
-}
-
-/**
- * Convert the app-layer quiz result into a deterministic renderable view model.
- */
-export function toQuizPageViewModel(result: QuizGenerationResult): QuizPageViewModel {
-  if (result.ok === true) {
-    return {
-      kind: 'success',
-      questions: result.value.questions.map((question) => ({
-        question: question.question,
-        options: question.options,
-        correctAnswer: toAnswerLabel(question.correctAnswer),
-        explanation: question.explanation,
-      })),
-    };
-  }
-
+export function toQuizPageViewModel(session: QuizSession): QuizPageViewModel {
   return {
-    kind: 'error',
-    error: {
-      code: result.error.code,
-      message: result.error.message,
-    },
+    kind: 'success',
+    sessionId: session.id,
+    topic: session.topic,
+    attemptEndpoint: `/quizzes/${session.id}/attempts`,
+    initialProgressLabel: `Question 1 of ${session.questions.length}`,
+    questions: session.questions.map((question) => ({
+      question: question.question,
+      options: question.options,
+    })),
   };
 }
 
-/**
- * Render a view model into a deterministic text presentation.
- */
-export function renderQuizPage(viewModel: QuizPageViewModel): string {
-  if (viewModel.kind === 'error') {
-    return [
-      `Error: ${viewModel.error.code}`,
-      `Message: ${viewModel.error.message}`,
-    ].join('\n');
-  }
-
-  const header = 'Generated MCQs';
-  const body = viewModel.questions.map(renderQuestion).join('\n\n');
-
-  return [header, body].join('\n\n');
-}
-
-/**
- * Convenience helper for rendering the app result directly.
- */
-export function renderQuizResult(result: QuizGenerationResult): string {
-  return renderQuizPage(toQuizPageViewModel(result));
+export function toQuizPageErrorViewModel(error: RenderedError): QuizPageViewModel {
+  return {
+    kind: 'error',
+    error: {
+      code: error.code,
+      message: error.message,
+    },
+  };
 }

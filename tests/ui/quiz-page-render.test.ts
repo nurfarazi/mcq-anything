@@ -1,4 +1,4 @@
-import { renderQuizPage, renderQuizResult, toQuizPageViewModel } from '../../src/ui/quiz-page-render';
+import { toQuizPageErrorViewModel, toQuizPageViewModel } from '../../src/ui/quiz-page-render';
 
 function assertEqual(actual: unknown, expected: unknown, label: string): void {
   const actualJson = JSON.stringify(actual);
@@ -9,24 +9,24 @@ function assertEqual(actual: unknown, expected: unknown, label: string): void {
   }
 }
 
-const successResult = {
-  ok: true,
-  value: {
-    questions: [
-      {
-        question: 'What is the capital of France?',
-        options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
-        correctAnswer: 2,
-        explanation: 'Paris is the capital city of France.',
-      },
-      {
-        question: 'Which planet is known as the Red Planet?',
-        options: ['Earth', 'Mars', 'Venus', 'Jupiter'] as const,
-        correctAnswer: 1,
-        explanation: 'Mars is called the Red Planet.',
-      },
-    ],
-  },
+const session = {
+  id: 'session-123',
+  topic: 'Astronomy',
+  createdAt: '2026-04-22T08:00:00.000Z',
+  questions: [
+    {
+      question: 'What is the capital of France?',
+      options: ['Berlin', 'Madrid', 'Paris', 'Rome'] as const,
+      correctAnswer: 2,
+      explanation: 'Paris is the capital city of France.',
+    },
+    {
+      question: 'Which planet is known as the Red Planet?',
+      options: ['Earth', 'Mars', 'Venus', 'Jupiter'] as const,
+      correctAnswer: 1,
+      explanation: 'Mars is called the Red Planet.',
+    },
+  ],
 } as const;
 
 const errorResult = {
@@ -37,54 +37,30 @@ const errorResult = {
   },
 } as const;
 
-const successViewModel = toQuizPageViewModel(successResult);
+const successViewModel = toQuizPageViewModel(session);
 assertEqual(
   successViewModel,
   {
     kind: 'success',
+    sessionId: 'session-123',
+    topic: 'Astronomy',
+    attemptEndpoint: '/quizzes/session-123/attempts',
+    initialProgressLabel: 'Question 1 of 2',
     questions: [
       {
         question: 'What is the capital of France?',
         options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-        correctAnswer: 'C',
-        explanation: 'Paris is the capital city of France.',
       },
       {
         question: 'Which planet is known as the Red Planet?',
         options: ['Earth', 'Mars', 'Venus', 'Jupiter'],
-        correctAnswer: 'B',
-        explanation: 'Mars is called the Red Planet.',
       },
     ],
   },
-  'maps the public app success result into a renderable success view model',
+  'maps a stored quiz session into a browser-play view model without leaking answers',
 );
 
-assertEqual(
-  renderQuizPage(successViewModel),
-  [
-    'Generated MCQs',
-    '',
-    '1. What is the capital of France?',
-    '  A. Berlin',
-    '  B. Madrid',
-    '  C. Paris',
-    '  D. Rome',
-    '  Correct answer: C',
-    '  Explanation: Paris is the capital city of France.',
-    '',
-    '2. Which planet is known as the Red Planet?',
-    '  A. Earth',
-    '  B. Mars',
-    '  C. Venus',
-    '  D. Jupiter',
-    '  Correct answer: B',
-    '  Explanation: Mars is called the Red Planet.',
-  ].join('\n'),
-  'renders questions, four options, correct answers, and explanations deterministically',
-);
-
-const errorViewModel = toQuizPageViewModel(errorResult);
+const errorViewModel = toQuizPageErrorViewModel(errorResult.error);
 assertEqual(
   errorViewModel,
   {
@@ -94,26 +70,5 @@ assertEqual(
       message: 'Returned question count did not match the request.',
     },
   },
-  'maps the public app error result into a renderable error view model',
-);
-
-assertEqual(
-  renderQuizPage(errorViewModel),
-  [
-    'Error: INVALID_MODEL_OUTPUT',
-    'Message: Returned question count did not match the request.',
-  ].join('\n'),
-  'renders only app-safe error information',
-);
-
-assertEqual(
-  renderQuizResult(successResult),
-  renderQuizPage(successViewModel),
-  'renders the same success output through the convenience helper',
-);
-
-assertEqual(
-  renderQuizResult(errorResult),
-  renderQuizPage(errorViewModel),
-  'renders the same error output through the convenience helper',
+  'maps an app-safe error into a renderable error view model',
 );

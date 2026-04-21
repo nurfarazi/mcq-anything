@@ -1,4 +1,6 @@
 import type { QuizPersistencePort } from '../../src/app/quiz-store';
+import { createQuizAttempt } from '../../src/app/quiz-attempt';
+import { scoreQuizAnswers } from '../../src/app/quiz-scoring';
 import { createQuizSession } from '../../src/app/quiz-session';
 
 type Equal<A, B> =
@@ -16,6 +18,8 @@ type PortShape = Expect<
       saveSession(session: import('../../src/app/quiz-session').QuizSession): Promise<void>;
       listSessions(): Promise<readonly import('../../src/app/quiz-session').QuizSession[]>;
       getSessionById(id: string): Promise<import('../../src/app/quiz-session').QuizSession | null>;
+      saveAttempt(attempt: import('../../src/app/quiz-attempt').QuizAttempt): Promise<void>;
+      listAttemptsBySessionId(sessionId: string): Promise<readonly import('../../src/app/quiz-attempt').QuizAttempt[]>;
     }
   >
 >;
@@ -31,6 +35,7 @@ function assertDeepEqual(actual: unknown, expected: unknown, label: string): voi
 
 async function main(): Promise<void> {
   const store: Array<import('../../src/app/quiz-session').QuizSession> = [];
+  const attempts: Array<import('../../src/app/quiz-attempt').QuizAttempt> = [];
 
   const port: QuizPersistencePort = {
     async saveSession(session) {
@@ -41,6 +46,12 @@ async function main(): Promise<void> {
     },
     async getSessionById(id) {
       return store.find((session) => session.id === id) ?? null;
+    },
+    async saveAttempt(attempt) {
+      attempts.push(attempt);
+    },
+    async listAttemptsBySessionId(sessionId) {
+      return attempts.filter((attempt) => attempt.sessionId === sessionId);
     },
   };
 
@@ -71,6 +82,18 @@ async function main(): Promise<void> {
   await port.saveSession(firstSession);
   await port.saveSession(secondSession);
 
+  const firstAttempt = createQuizAttempt(
+    'session-100',
+    [0],
+    scoreQuizAnswers(firstSession.questions, [0]),
+    {
+      idFactory: () => 'attempt-100',
+      clock: () => new Date('2026-04-15T08:30:00.000Z'),
+    },
+  );
+
+  await port.saveAttempt(firstAttempt);
+
   assertDeepEqual(
     await port.listSessions(),
     [firstSession, secondSession],
@@ -87,6 +110,12 @@ async function main(): Promise<void> {
     await port.getSessionById('missing-session'),
     null,
     'returns null when a stored quiz session does not exist',
+  );
+
+  assertDeepEqual(
+    await port.listAttemptsBySessionId('session-100'),
+    [firstAttempt],
+    'lists stored quiz attempts by session id',
   );
 }
 

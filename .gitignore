@@ -18,8 +18,6 @@ tmp/
 *.tsbuildinfo
 
 # environment files
-.env
-.env.*
 !.env.example
 
 # logs
@@ -33,3 +31,4 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+config.bat
