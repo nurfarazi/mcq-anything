@@ -1,5 +1,7 @@
 import { renderQuizPage } from '../../src/ui/quiz-page';
 
+type FetchInput = Parameters<typeof fetch>[0];
+
 function assertContains(actual: string, expected: string, label: string): void {
   if (!actual.includes(expected)) {
     throw new Error(`${label}: expected output to include ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
@@ -26,9 +28,9 @@ function restoreEnvironment(): void {
   }
 }
 
-function installFetch(handler: (input: RequestInfo | URL) => Promise<Response>): void {
+function installFetch(handler: (input: FetchInput) => Promise<Response>): void {
   const globalLike = globalThis as typeof globalThis & { fetch?: typeof fetch };
-  globalLike.fetch = (async (input: RequestInfo | URL) => handler(input)) as typeof fetch;
+  globalLike.fetch = (async (input: FetchInput) => handler(input)) as typeof fetch;
 }
 
 function installQuizResponse(
@@ -39,7 +41,7 @@ function installQuizResponse(
     explanation: string;
   }>,
 ): void {
-  installFetch(async (input: RequestInfo | URL) => {
+  installFetch(async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {

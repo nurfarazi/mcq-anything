@@ -7,6 +7,8 @@ import {
 import type { QuizPersistencePort } from '../../src/app/quiz-store';
 import type { QuizSession } from '../../src/app/quiz-session';
 
+type FetchInput = Parameters<typeof fetch>[0];
+
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends
   (<T>() => T extends B ? 1 : 2)
@@ -80,7 +82,7 @@ async function main(): Promise<void> {
     },
   };
 
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
+  globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {
@@ -142,7 +144,7 @@ async function main(): Promise<void> {
     'stores the generated MCQ content in the session snapshot',
   );
 
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
+  globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {
@@ -205,7 +207,7 @@ async function main(): Promise<void> {
     },
   };
 
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
+  globalThis.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {

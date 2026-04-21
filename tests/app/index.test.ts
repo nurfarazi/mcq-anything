@@ -1,5 +1,7 @@
 import { generateQuiz } from '../../src/app';
 
+type FetchInput = Parameters<typeof fetch>[0];
+
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends
   (<T>() => T extends B ? 1 : 2)
@@ -29,7 +31,7 @@ async function main(): Promise<void> {
   const originalFetch = globalLike.fetch;
   const originalProviderEnv = globalLike.process?.env?.MCQ_ANYTHING_PROVIDER;
 
-  globalLike.fetch = (async (input: RequestInfo | URL) => {
+  globalLike.fetch = (async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {

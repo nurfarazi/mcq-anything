@@ -1,5 +1,7 @@
 import { generateQuiz } from '../../src/app/quiz-generation';
 
+type FetchInput = Parameters<typeof fetch>[0];
+
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends
   (<T>() => T extends B ? 1 : 2)
@@ -36,13 +38,13 @@ const originalFetch = globalThis.fetch;
 const originalProviderEnv = globalThis.process?.env?.MCQ_ANYTHING_PROVIDER;
 
 function installFetch(
-  handler: (input: RequestInfo | URL) => Promise<Response>,
+  handler: (input: FetchInput) => Promise<Response>,
 ): void {
   const globalLike = globalThis as typeof globalThis & {
     fetch?: typeof fetch;
   };
 
-  globalLike.fetch = (async (input: RequestInfo | URL) => handler(input)) as typeof fetch;
+  globalLike.fetch = (async (input: FetchInput) => handler(input)) as typeof fetch;
 }
 
 function restoreEnv(): void {
@@ -63,7 +65,7 @@ function restoreEnv(): void {
 }
 
 async function main(): Promise<void> {
-  installFetch(async (input: RequestInfo | URL) => {
+  installFetch(async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {
@@ -121,7 +123,7 @@ async function main(): Promise<void> {
     'returns a successful quiz result on the happy path',
   );
 
-  installFetch(async (input: RequestInfo | URL) => {
+  installFetch(async (input: FetchInput) => {
     const url = String(input);
 
     if (!url.includes('127.0.0.1:1234/v1/mcq')) {
@@ -154,7 +156,7 @@ async function main(): Promise<void> {
     'rejects model output that does not match the requested question count',
   );
 
-    installFetch(async (input: RequestInfo | URL) => {
+    installFetch(async (input: FetchInput) => {
         const url = String(input);
 
         if (!url.includes('127.0.0.1:1234/v1/mcq')) {

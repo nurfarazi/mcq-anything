@@ -1,0 +1,20 @@
+[
+  {
+    "id": "4f70e1c5-429c-4923-a857-a69a8c1d58c8",
+    "topic": "Arithmetic",
+    "questions": [
+      {
+        "question": "In basic arithmetic, what is 2 + 2?",
+        "options": [
+          "1",
+          "2",
+          "4",
+          "5"
+        ],
+        "correctAnswer": 2,
+        "explanation": "Adding two and two gives four, which is the correct result for this arithmetic question."
+      }
+    ],
+    "createdAt": "2026-04-21T17:42:04.861Z"
+  }
+]

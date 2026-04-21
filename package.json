@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "TypeScript library and CLI for generating multiple-choice questions from a topic.",
+  "description": "TypeScript API backend and library for generating multiple-choice questions from a topic.",
   "scripts": {
     "test": "tsx scripts/run-tests.ts",
-    "cli": "tsx src/cli.ts",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/src/server.js",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

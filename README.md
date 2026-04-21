@@ -2,14 +2,13 @@
 
 MCQ Anything is a TypeScript codebase for generating multiple-choice questions from a topic, validating the model output, and optionally storing quiz sessions locally.
 
-It is **not** a standalone web server or desktop app. The public entry points are library functions you can import from `src/app` or `src/ui`, plus a small CLI you can run locally.
+It is now an **API-first backend**. The public entry points are the HTTP API plus library functions you can import from `src/app`.
 
 ## What it does
 
 - Generates MCQs for a requested topic and question count.
 - Validates model output before it reaches callers.
 - Supports a minimal quiz-session persistence layer.
-- Renders quiz results either as plain text for the CLI or as a browser-ready HTML page with Vue.
 
 ## Prerequisites
 
@@ -27,13 +26,13 @@ npm install
 
 - Make sure LM Studio is running and serving the MCQ endpoint.
 
-- Generate your first quiz:
+- Start the API server:
 
 ```bash
-npm run cli -- Astronomy 2
+npm run dev
 ```
 
-That command will print the generated quiz to the terminal and store the session locally in `.mcq-anything/sessions.json` by default.
+The API listens on `http://localhost:3000` by default and stores sessions locally in `.mcq-anything/sessions.json`.
 
 ## Configuration
 
@@ -45,25 +44,46 @@ The app reads a small set of environment variables:
 - `MCQ_ANYTHING_LM_STUDIO_ENDPOINT`
   - Optional override for the LM Studio endpoint
   - Defaults to `http://127.0.0.1:1234/v1/mcq`
+- `MCQ_ANYTHING_ALLOWED_ORIGIN`
+  - Optional exact browser origin allowed to call the API from a browser client
+  - Defaults to `http://localhost:5173` for local React development
+  - Leave it unset if you are calling the API from curl or another non-browser client
 
 If you want the default local setup, leave `MCQ_ANYTHING_PROVIDER` unset and start LM Studio on the default port.
 
-## CLI commands
+## HTTP API
 
-After installing dependencies, you can use these commands:
+The backend exposes a small JSON API:
 
-```bash
-npm run cli -- Astronomy 2
+- `GET /health` — health check
+- `POST /quizzes` — generate and store a quiz
+- `GET /quizzes` — list stored quiz sessions
+- `GET /quizzes/:id` — fetch one stored quiz session
+
+Successful responses use this envelope:
+
+```json
+{ "ok": true, "value": {} }
 ```
 
-- `npm run cli -- Astronomy 2`
-- `npm run cli -- history`
-- `npm run cli -- show <session-id>`
+Error responses use the same envelope with an error object:
 
-You can also disable session storage for a one-off generation run:
+```json
+{ "ok": false, "error": { "code": "INVALID_INPUT", "message": "..." } }
+```
+
+Example request:
 
 ```bash
-npm run cli -- Astronomy 2 --no-store
+curl -X POST http://localhost:3000/quizzes \
+  -H "content-type: application/json" \
+  -d '{"topic":"Astronomy","questionCount":2}'
+```
+
+Example list request:
+
+```bash
+curl http://localhost:3000/quizzes
 ```
 
 If you prefer the lower-level API, import from `src/app` instead:
@@ -72,16 +92,12 @@ If you prefer the lower-level API, import from `src/app` instead:
 - `generateAndStoreQuiz(input, store)` for generation plus persistence
 - `listPastQuizzes(store)` to list stored sessions
 - `getQuizSession(id, store)` to load one stored session
+- `createQuizSession(topic, questions)` to create a session snapshot
 
-## Public output format
+If you need the browser-oriented HTML helpers, import from `src/ui`:
 
-`renderQuizPage(...)` returns a complete HTML document that mounts a small Vue quiz page in the browser. If you want the legacy plain-text format, use `renderQuizResult(...)` from `src/ui/quiz-page-render.ts`.
-
-The HTML renderer is intended for browser use, while the CLI still uses the text renderer.
-
-If you need to preview the HTML page, write the returned string to an `.html` file and open it in a browser.
-
-If something fails, the render helper returns a safe error message instead of leaking provider or transport details.
+- `renderQuizPage(input)` to generate the browser-ready quiz HTML
+- `renderQuizResult(result)` to format quiz output as plain text
 
 ## Testing
 
@@ -95,11 +111,29 @@ npm test
 
 The test script walks the `tests/` directory and imports each `*.test.ts` file directly.
 
+## Verifying the API locally
+
+Start the server with `npm run dev`, then try these requests:
+
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Generate and store a quiz
+curl -X POST http://localhost:3000/quizzes \
+  -H "content-type: application/json" \
+  -d '{"topic":"Astronomy","questionCount":2}'
+
+# List stored quizzes
+curl http://localhost:3000/quizzes
+```
+
 ## Project structure
 
 - `src/app/` — quiz generation, validation, lifecycle, and persistence helpers
+- `src/api/` — HTTP request handling and response mapping
 - `src/llm/` — provider selection and LM Studio adapter code
-- `src/ui/` — quiz rendering helpers for generated quizzes, including the Vue HTML page
+- `src/ui/` — optional browser/HTML rendering helpers for generated quizzes
 - `tests/` — contract and regression tests for each layer
 
 ## Notes
