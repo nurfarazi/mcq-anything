@@ -15,10 +15,10 @@ type Equal<A, B> =
 
 type Expect<T extends true> = T;
 
-type ProviderKeyShape = Expect<Equal<ProviderKey, 'lm-studio' | 'openai'>>;
+type ProviderKeyShape = Expect<Equal<ProviderKey, 'lm-studio'>>;
 type ProviderConfigShape = Expect<Equal<ProviderConfig, { provider: ProviderKey }>>;
 type SupportedKeysShape = Expect<
-  Equal<typeof SUPPORTED_PROVIDER_KEYS, readonly ['lm-studio', 'openai']>
+  Equal<typeof SUPPORTED_PROVIDER_KEYS, readonly ['lm-studio']>
 >;
 
 function assertDeepEqual(actual: unknown, expected: unknown, label: string): void {
@@ -50,12 +50,6 @@ assertDeepEqual(
   parseProviderConfig({}),
   { provider: DEFAULT_PROVIDER_KEY },
   'defaults to LM Studio when provider env is missing',
-);
-
-assertDeepEqual(
-  parseProviderConfig({ [PROVIDER_ENV_VAR]: 'openai' }),
-  { provider: 'openai' },
-  'parses explicit provider override',
 );
 
 assertDeepEqual(

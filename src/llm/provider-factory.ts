@@ -33,8 +33,6 @@ export function createProvider(
         generate: (request) =>
           requestMcqGenerationFromLmStudio(request, options.lmStudio),
       };
-    case 'openai':
-      throw new Error('OpenAI provider is not implemented yet');
     default:
       return assertUnsupportedProvider(provider);
   }

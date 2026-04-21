@@ -1,21 +1,6 @@
-declare const require: {
-  (id: string): unknown;
-};
-
-const { mkdtemp, readFile, rm, writeFile } = require('fs/promises') as {
-  mkdtemp(prefix: string): Promise<string>;
-  readFile(path: string, encoding: 'utf8'): Promise<string>;
-  rm(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
-  writeFile(path: string, data: string, encoding: 'utf8'): Promise<void>;
-};
-
-const { tmpdir } = require('os') as {
-  tmpdir(): string;
-};
-
-const { join } = require('path') as {
-  join(...parts: string[]): string;
-};
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { FileQuizPersistenceAdapter } from '../../src/app/quiz-store-file';
 import { createQuizSession } from '../../src/app/quiz-session';
 

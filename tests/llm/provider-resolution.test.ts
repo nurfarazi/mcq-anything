@@ -25,13 +25,6 @@ assertSame(
   'uses the default provider from config without duplicating fallback logic in resolution',
 );
 
-const openAiConfig = { provider: 'openai' } as const satisfies ProviderConfig;
-assertSame(
-  resolveActiveProviderKey(openAiConfig),
-  'openai',
-  'returns the provider key from config without additional branching',
-);
-
 const lmStudioConfig = Object.freeze({ provider: DEFAULT_PROVIDER_KEY }) as Readonly<ProviderConfig>;
 assertSame(
   resolveActiveProviderKey(lmStudioConfig),

@@ -1,4 +1,4 @@
-export const SUPPORTED_PROVIDER_KEYS = ['lm-studio', 'openai'] as const;
+export const SUPPORTED_PROVIDER_KEYS = ['lm-studio'] as const;
 
 export type ProviderKey = (typeof SUPPORTED_PROVIDER_KEYS)[number];
 

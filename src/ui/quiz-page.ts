@@ -1,5 +1,6 @@
 import { generateQuiz, type QuizGenerationInput } from '../app';
-import { renderQuizResult } from './quiz-page-render';
+import { toQuizPageViewModel } from './quiz-page-render';
+import { renderQuizPageHtml } from './quiz-page-html';
 
 /**
  * Minimal user-facing trigger for quiz generation.
@@ -7,5 +8,5 @@ import { renderQuizResult } from './quiz-page-render';
 export async function renderQuizPage(input: QuizGenerationInput): Promise<string> {
   const result = await generateQuiz(input);
 
-  return renderQuizResult(result);
+  return renderQuizPageHtml(toQuizPageViewModel(result));
 }

@@ -1,18 +1,5 @@
-declare const require: {
-  (id: string): unknown;
-};
-
-const { mkdir, readFile, rename, rm, writeFile } = require('fs/promises') as {
-  mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
-  readFile(path: string, encoding: 'utf8'): Promise<string>;
-  rename(oldPath: string, newPath: string): Promise<void>;
-  rm(path: string, options?: { force?: boolean }): Promise<void>;
-  writeFile(path: string, data: string, encoding: 'utf8'): Promise<void>;
-};
-
-const { dirname } = require('path') as {
-  dirname(path: string): string;
-};
+import { dirname } from 'node:path';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import type { QuizPersistencePort } from './quiz-store';
 import type { QuizSession } from './quiz-session';
 

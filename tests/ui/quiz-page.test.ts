@@ -1,8 +1,8 @@
 import { renderQuizPage } from '../../src/ui/quiz-page';
 
-function assertEqual(actual: unknown, expected: unknown, label: string): void {
-  if (actual !== expected) {
-    throw new Error(`${label}: expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
+function assertContains(actual: string, expected: string, label: string): void {
+  if (!actual.includes(expected)) {
+    throw new Error(`${label}: expected output to include ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
   }
 }
 
@@ -71,14 +71,10 @@ async function expectRenderedError(
 ): Promise<void> {
   const output = await renderQuizPage({ topic, questionCount });
 
-  assertEqual(
-    output,
-    [
-      'Error: INVALID_MODEL_OUTPUT',
-      `Message: ${expectedMessage}`,
-    ].join('\n'),
-    label,
-  );
+  assertContains(output, '<!doctype html>', `${label} includes a document shell`);
+  assertContains(output, 'Quiz generation error', `${label} includes the error panel`);
+  assertContains(output, 'Error: {{ model.error.code }}', `${label} includes the Vue error binding`);
+  assertContains(output, expectedMessage, `${label} includes the error message`);
 }
 
 async function main(): Promise<void> {
@@ -95,21 +91,12 @@ async function main(): Promise<void> {
 
   const successOutput = await renderQuizPage({ topic: 'Geography', questionCount: 1 });
 
-  assertEqual(
-    successOutput,
-    [
-      'Generated MCQs',
-      '',
-      '1. What is the capital of France?',
-      '  A. Berlin',
-      '  B. Madrid',
-      '  C. Paris',
-      '  D. Rome',
-      '  Correct answer: C',
-      '  Explanation: Paris is the capital city of France.',
-    ].join('\n'),
-    'renders a successful quiz flow through the public app boundary',
-  );
+  assertContains(successOutput, '<!doctype html>', 'renders a successful quiz flow through the public app boundary');
+  assertContains(successOutput, 'https://unpkg.com/vue@3/dist/vue.global.prod.js', 'loads Vue for the public app boundary');
+  assertContains(successOutput, 'Practice one multiple-choice question at a time.', 'renders the hero copy');
+  assertContains(successOutput, 'What is the capital of France?', 'renders the question text');
+  assertContains(successOutput, 'Paris is the capital city of France.', 'renders the explanation text');
+  assertContains(successOutput, 'Reveal answers', 'renders the primary action');
 
   installQuizResponse([
     {
@@ -207,14 +194,8 @@ async function main(): Promise<void> {
 
   const configErrorOutput = await renderQuizPage({ topic: 'Science', questionCount: 1 });
 
-  assertEqual(
-    configErrorOutput,
-    [
-      'Error: GENERATION_FAILED',
-      'Message: Unable to configure quiz generation.',
-    ].join('\n'),
-    'renders app-safe configuration failures without leaking provider details',
-  );
+  assertContains(configErrorOutput, 'GENERATION_FAILED', 'renders app-safe configuration failures without leaking provider details');
+  assertContains(configErrorOutput, 'Unable to configure quiz generation.', 'renders app-safe configuration failures without leaking provider details');
 
   installFetch(async () => {
     throw new Error('socket hang up');
@@ -224,14 +205,8 @@ async function main(): Promise<void> {
 
   const providerErrorOutput = await renderQuizPage({ topic: 'Science', questionCount: 1 });
 
-  assertEqual(
-    providerErrorOutput,
-    [
-      'Error: GENERATION_FAILED',
-      'Message: Unable to generate quiz content.',
-    ].join('\n'),
-    'renders app-safe provider failures without leaking transport details',
-  );
+  assertContains(providerErrorOutput, 'GENERATION_FAILED', 'renders app-safe provider failures without leaking transport details');
+  assertContains(providerErrorOutput, 'Unable to generate quiz content.', 'renders app-safe provider failures without leaking transport details');
 
   restoreEnvironment();
 }

@@ -1,4 +1,3 @@
-import type { ProviderKey } from '../../src/llm/config';
 import type { McqProvider, ProviderFactoryOptions } from '../../src/llm/provider-factory';
 import { createProvider } from '../../src/llm/provider-factory';
 
@@ -101,11 +100,6 @@ async function main(): Promise<void> {
     'returns the normalized response from the LM Studio adapter',
   );
 
-  assertThrows(
-    () => createProvider('openai' as ProviderKey, options),
-    'OpenAI provider is not implemented yet',
-    'rejects unsupported provider keys explicitly',
-  );
 }
 
 void main().catch((error) => {
